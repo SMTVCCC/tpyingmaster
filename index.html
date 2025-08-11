@@ -216,6 +216,8 @@
       </header>
 
       <main class="stage" tabindex="0" id="stage">
+        <!-- 隐藏的文本输入框用于捕获用户输入 -->
+        <input type="text" id="hiddenInput" style="position: absolute; left: -9999px; opacity: 0; width: 1px; height: 1px;" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
         <div id="promptMeta" class="lesson-title">English • Random Words</div>
         <div id="text" class="text"></div>
         <div id="hint" class="hint">按任意键开始</div>

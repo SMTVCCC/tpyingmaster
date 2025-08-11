@@ -271,11 +271,24 @@ function showTypingPage(mode) {
   generateContent(mode);
   reset();
   
-  // 初始化焦点管理，确保在所有浏览器中都能正常接收按键事件
+  // 确保隐藏输入框获得焦点，以便捕获用户输入
   setTimeout(() => {
-    initializeFocus();
-    ensureFocus();
-  }, 100);
+    const hiddenInput = document.getElementById('hiddenInput');
+    if (hiddenInput) {
+      hiddenInput.focus();
+      console.log('Hidden input focused in showTypingPage');
+      
+      // 确保输入框可以接收输入
+      hiddenInput.style.pointerEvents = 'auto';
+      hiddenInput.removeAttribute('readonly');
+      
+      // 重置输入值
+      hiddenInput.value = '';
+      lastInputValue = '';
+    } else {
+      console.error('Hidden input not found in showTypingPage');
+    }
+  }, 150);
 }
 
 function generateContent(mode) {
@@ -667,61 +680,115 @@ function finishSession() {
   saveStats(sessionData);
 }
 
-function onKey(e){
-  // 增强的按键处理，提高浏览器兼容性
-  // Ignore modifier keys (except Shift for uppercase)
-  if (e.metaKey || e.ctrlKey || e.altKey) {
+// 旧的onKey函数已被新的输入系统替代
+
+function flashWrong(){
+  const cur = textEl.querySelector('.current');
+  if (!cur) return;
+  cur.classList.add('wrong');
+  setTimeout(()=>cur.classList.remove('wrong'), 140);
+}
+
+// 新的输入系统：使用隐藏输入框捕获用户输入
+let hiddenInput = null;
+let lastInputValue = '';
+
+// 检查是否处于打字模式
+function isTypingMode() {
+  return typingPage && typingPage.style.display !== 'none';
+}
+
+function setupInputSystem() {
+  hiddenInput = document.getElementById('hiddenInput');
+  if (!hiddenInput) {
+    console.error('Hidden input element not found!');
     return;
   }
   
-  // 获取按键，处理不同浏览器的兼容性
-  let key = e.key;
+  console.log('Setting up input system...');
   
-  // 调试信息：记录按键事件
-  console.log('onKey called:', {
-    originalKey: e.key,
-    keyCode: e.keyCode,
-    shiftKey: e.shiftKey,
-    code: e.code
+  // 监听input事件
+  hiddenInput.addEventListener('input', handleTextInput);
+  
+  // 监听键盘事件以处理特殊键（如Backspace、Enter）
+  hiddenInput.addEventListener('keydown', handleSpecialKeys);
+  
+  // 确保输入框在打字模式下始终有焦点
+  document.addEventListener('click', function() {
+    if (isTypingMode() && hiddenInput) {
+      console.log('Document clicked, refocusing hidden input');
+      hiddenInput.focus();
+    }
   });
   
-  // 处理某些浏览器中key值不一致的问题
-  if (!key || key === 'Unidentified') {
-    // 备用方案：使用keyCode
-    if (e.keyCode) {
-      if (e.keyCode === 8) key = 'Backspace';
-      else if (e.keyCode === 13) key = 'Enter';
-      else if (e.keyCode === 32) key = ' ';
-      else if (e.keyCode >= 48 && e.keyCode <= 57) key = String.fromCharCode(e.keyCode); // 数字
-      else if (e.keyCode >= 65 && e.keyCode <= 90) {
-        // 字母 - 修复大小写处理逻辑
-        // keyCode 65-90 对应 A-Z，需要根据 shiftKey 决定大小写
-        key = String.fromCharCode(e.shiftKey ? e.keyCode : e.keyCode + 32);
-      } else if (e.keyCode >= 186 && e.keyCode <= 222) {
-        // 标点符号等特殊字符的处理
-        const specialKeys = {
-          186: e.shiftKey ? ':' : ';',
-          187: e.shiftKey ? '+' : '=',
-          188: e.shiftKey ? '<' : ',',
-          189: e.shiftKey ? '_' : '-',
-          190: e.shiftKey ? '>' : '.',
-          191: e.shiftKey ? '?' : '/',
-          192: e.shiftKey ? '~' : '`',
-          219: e.shiftKey ? '{' : '[',
-          220: e.shiftKey ? '|' : '\\',
-          221: e.shiftKey ? '}' : ']',
-          222: e.shiftKey ? '"' : "'"
-        };
-        key = specialKeys[e.keyCode] || key;
-      }
+  // 防止输入框失去焦点
+  hiddenInput.addEventListener('blur', function() {
+    if (isTypingMode()) {
+      console.log('Hidden input lost focus, refocusing...');
+      setTimeout(() => {
+        if (hiddenInput && isTypingMode()) {
+          hiddenInput.focus();
+        }
+      }, 10);
     }
+  });
+  
+  // 添加调试信息
+  hiddenInput.addEventListener('focus', function() {
+    console.log('Hidden input gained focus');
+  });
+  
+  hiddenInput.addEventListener('keypress', function(e) {
+    console.log('Keypress event:', e.key, e.charCode, e.keyCode);
+  });
+  
+  console.log('Input system setup complete');
+}
+
+function handleTextInput(e) {
+  if (!isTypingMode()) {
+    console.log('Not in typing mode, ignoring input');
+    return;
   }
   
-  // 处理Space键的兼容性问题
-  if (key === ' ' || key === 'Spacebar' || e.keyCode === 32) {
-    key = ' ';
+  const currentValue = e.target.value;
+  console.log('Input event:', { currentValue, lastInputValue });
+  
+  // 检测是否有新字符输入
+  if (currentValue.length > lastInputValue.length) {
+    // 有新字符输入
+    const newChar = currentValue.slice(lastInputValue.length);
+    console.log('New character detected:', newChar);
+    processCharacterInput(newChar);
+  } else if (currentValue.length < lastInputValue.length) {
+    // 字符被删除（Backspace）
+    console.log('Backspace detected');
+    processBackspace();
   }
   
+  // 更新最后输入值
+  lastInputValue = currentValue;
+  
+  // 清空输入框以准备下一次输入（延迟执行以避免干扰）
+  setTimeout(() => {
+    if (e.target && e.target.value) {
+      e.target.value = '';
+      lastInputValue = '';
+      console.log('Input cleared');
+    }
+  }, 10);
+}
+
+function handleSpecialKeys(e) {
+  if (!isTypingMode()) return;
+  
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    processEnterKey();
+  }
+}
+
+function processCharacterInput(char) {
   if (!startedAt) { 
     startedAt = Date.now(); 
     sessionStartTime = Date.now();
@@ -733,184 +800,86 @@ function onKey(e){
     }
   }
   
-  if (key === 'Backspace') {
-    if (index > 0) {
-      index--;
-      // 清除当前位置的错误和修正标记
+  // 调试信息
+  console.log('Processing character input:', {
+    char: char,
+    expected: text[index],
+    index: index
+  });
+  
+  keystrokes++;
+  const expected = text[index];
+  const isCorrect = char === expected;
+  
+  if (isCorrect) {
+    // 如果之前这个位置有错误，现在修正了，标记为已修正
+    if (errorCharacters.has(index)) {
       errorCharacters.delete(index);
-      correctedCharacters.delete(index);
-      render();
-      playClick('backspace');
+      correctedCharacters.add(index);
     }
-    return;
+    
+    index++;
+    
+    // 在单词模式下，如果完成了一个单词（下一个字符是空格或到达末尾），自动跳到下一个单词
+    if (currentMode === 'words' && (index >= text.length || text[index] === ' ')) {
+      // 跳过空格到下一个单词
+      while (index < text.length && text[index] === ' ') {
+        index++;
+      }
+    }
+    
+    playClick('ok');
+    if (stageEl) {
+      stageEl.classList.remove('pop');
+      void stageEl.offsetWidth; // restart animation
+      stageEl.classList.add('pop');
+    }
+    
+    // Check if finished
+    if (index >= text.length) {
+      finishSession();
+      if (currentMode === 'words') {
+        // For words mode, continue with more content
+        text += ' ' + randWords(40);
+      } else {
+        // For other modes, show completion
+        if (hintEl) hintEl.textContent = '练习完成！按重打键继续';
+      }
+    }
+  } else {
+    // 标记错误字符位置
+    errorCharacters.add(index);
+    wrong++;
+    playClick('err');
+    flashWrong();
   }
+  render();
+}
 
-  if (key === 'Enter') {
-    const nextSpace = text.indexOf(' ', index);
-    index = nextSpace === -1 ? text.length : nextSpace + 1;
+function processBackspace() {
+  if (index > 0) {
+    index--;
+    // 清除当前位置的错误和修正标记
+    errorCharacters.delete(index);
+    correctedCharacters.delete(index);
     render();
-    return;
-  }
-
-  // Handle regular characters
-  if (key && key.length === 1) {
-    
-    // 特别调试a、s、d字母
-    if (key === 'a' || key === 's' || key === 'd' || key === 'A' || key === 'S' || key === 'D') {
-      console.log('Processing letter:', {
-        key: key,
-        expected: text[index],
-        index: index,
-        keyCode: e.keyCode,
-        originalKey: e.key
-      });
-    }
-    
-    keystrokes++;
-    const expected = text[index];
-    const isCorrect = key === expected;
-    
-    if (isCorrect) {
-      // 如果之前这个位置有错误，现在修正了，标记为已修正
-      if (errorCharacters.has(index)) {
-        errorCharacters.delete(index);
-        correctedCharacters.add(index);
-      }
-      
-      index++;
-      
-      // 在单词模式下，如果完成了一个单词（下一个字符是空格或到达末尾），自动跳到下一个单词
-      if (currentMode === 'words' && (index >= text.length || text[index] === ' ')) {
-        // 跳过空格到下一个单词
-        while (index < text.length && text[index] === ' ') {
-          index++;
-        }
-      }
-      
-      playClick('ok');
-      if (stageEl) {
-        stageEl.classList.remove('pop');
-        void stageEl.offsetWidth; // restart animation
-        stageEl.classList.add('pop');
-      }
-      
-      // Check if finished
-      if (index >= text.length) {
-        finishSession();
-        if (currentMode === 'words') {
-          // For words mode, continue with more content
-          text += ' ' + randWords(40);
-        } else {
-          // For other modes, show completion
-          if (hintEl) hintEl.textContent = '练习完成！按重打键继续';
-        }
-      }
-    } else {
-      // 标记错误字符位置
-      errorCharacters.add(index);
-      wrong++;
-      playClick('err');
-      flashWrong();
-    }
-    render();
+    playClick('backspace');
   }
 }
 
-function flashWrong(){
-  const cur = textEl.querySelector('.current');
-  if (!cur) return;
-  cur.classList.add('wrong');
-  setTimeout(()=>cur.classList.remove('wrong'), 140);
+function processEnterKey() {
+  const nextSpace = text.indexOf(' ', index);
+  index = nextSpace === -1 ? text.length : nextSpace + 1;
+  render();
 }
 
-// 统一使用 keydown 事件处理，避免重复触发和浏览器兼容性问题
-function setupKeyboardEvents() {
-  window.addEventListener('keydown', handleKeyDown, { passive: false });
-}
+// 旧的setupKeyboardEvents函数已被新的输入系统替代
 
-function handleKeyDown(e) {
-  // 只在打字页面处理输入
-  if (typingPage && typingPage.style.display !== 'none') {
-    // 在打字模式下，对所有可能的输入键都阻止默认行为
-    if (!e.isComposing && !e.metaKey && !e.ctrlKey && !e.altKey) {
-      // 阻止所有可能影响打字的默认行为
-      if (isTypingKey(e.key) || e.key === 'Tab' || e.key === 'Escape') {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    }
-    onKey(e);
-  } else if (homePage && homePage.style.display !== 'none') {
-    // 处理主页的快捷键
-    if (e.key >= '1' && e.key <= '6') {
-      e.preventDefault();
-      const modes = ['words', 'sentences', 'quotes', 'code', 'custom', 'test'];
-      const modeIndex = parseInt(e.key) - 1;
-      if (modes[modeIndex]) {
-        if (modes[modeIndex] === 'custom') {
-          const userText = prompt('请输入你想练习的文本：');
-          if (userText && userText.trim()) {
-            customText = userText.trim();
-            showTypingPage(modes[modeIndex]);
-          }
-        } else {
-          showTypingPage(modes[modeIndex]);
-        }
-      }
-    }
-  }
-}
+// 旧的handleKeyDown及相关函数已被新的输入系统替代
 
-function isTypingMode() {
-  return typingPage && typingPage.style.display !== 'none';
-}
+// 旧的键盘事件处理函数已被新的输入系统替代
 
-function isTypingKey(key) {
-  // 判断是否为打字相关的按键
-  return key.length === 1 || key === 'Backspace' || key === 'Enter' || key === ' ' || key === 'Space';
-}
-
-function ensureFocus() {
-  // 确保在打字模式下stage元素始终有焦点
-  if (isTypingMode() && stageEl) {
-    // 检查当前焦点元素
-    const activeElement = document.activeElement;
-    
-    // 如果焦点不在stage元素上，重新设置焦点
-    if (activeElement !== stageEl) {
-      // 确保stage元素可以接收键盘事件
-      if (stageEl.tabIndex < 0) {
-        stageEl.tabIndex = 0;
-      }
-      stageEl.focus({ preventScroll: true });
-    }
-  }
-}
-
-// 添加额外的焦点管理函数
-let focusInitialized = false;
-function initializeFocus() {
-  // 当进入打字页面时，确保正确设置焦点
-  if (stageEl && !focusInitialized) {
-    stageEl.tabIndex = 0;
-    stageEl.focus({ preventScroll: true });
-    
-    // 添加点击事件以重新获取焦点（只添加一次）
-    stageEl.addEventListener('click', () => {
-      if (isTypingMode()) {
-        stageEl.focus({ preventScroll: true });
-      }
-    });
-    
-    focusInitialized = true;
-  } else if (stageEl && focusInitialized) {
-    // 如果已经初始化过，只需要重新设置焦点
-    stageEl.focus({ preventScroll: true });
-  }
-}
-
-// 初始化键盘事件
-setupKeyboardEvents();
+// 新的输入系统将在页面加载时初始化
 
 // Typing page events
 if (restartBtn) {
@@ -1193,25 +1162,30 @@ templateBtns.forEach(btn => {
 });
 
 // Initialize
-if (homePage && homePage.style.display !== 'none') {
-  updateStatsDisplay();
-} else {
-  // If starting in typing mode, initialize with words
-  generateContent('words');
-  render();
-  // 确保在打字模式下正确初始化焦点
-  setTimeout(() => {
-    initializeFocus();
-    ensureFocus();
-  }, 200);
+let inputSystemInitialized = false;
+
+function initializeApp() {
+  console.log('Initializing app...');
+  
+  if (homePage && homePage.style.display !== 'none') {
+    updateStatsDisplay();
+  } else {
+    // If starting in typing mode, initialize with words
+    generateContent('words');
+    render();
+  }
+  
+  // 初始化新的输入系统（只初始化一次）
+  if (!inputSystemInitialized) {
+    setupInputSystem();
+    inputSystemInitialized = true;
+  }
 }
 
-// 页面加载完成后的额外初始化
-document.addEventListener('DOMContentLoaded', () => {
-  // 确保所有元素都已加载
-  setTimeout(() => {
-    if (isTypingMode()) {
-      initializeFocus();
-    }
-  }, 300);
-});
+// 页面加载完成后的初始化
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeApp);
+} else {
+  // 如果DOM已经加载完成，直接初始化
+  initializeApp();
+}

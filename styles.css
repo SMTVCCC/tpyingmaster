@@ -367,7 +367,31 @@ body {
   border-radius: 6px;
   padding: 4px 3px 2px;
 }
+.text .current.error {
+  background: var(--danger);
+  color: white;
+}
 .text .wrong { color: var(--danger); }
+.text .corrected { color: #ffd700; } /* 黄色表示已修正的字符 */
+.text .pending { color: var(--muted); }
+
+/* 单词模式样式 */
+.word-mode {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 140px;
+  font-size: clamp(32px, 6vw, 48px);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.word-mode span {
+  margin: 0 2px;
+  padding: 8px 6px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
 .hint {
   position: absolute;
   bottom: 22px;

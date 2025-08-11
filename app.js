@@ -516,17 +516,18 @@ let startedAt = null;
 let keystrokes = 0;
 let wrong = 0;
 let sessionStartTime = null;
+// 用于跟踪错误字符的状态
+let errorCharacters = new Set(); // 存储错误字符的位置
+let correctedCharacters = new Set(); // 存储已修正的字符位置
 
 function render(){
-  const before = text.slice(0, index);
-  const current = text[index] ?? '';
-  const after = text.slice(index + 1);
-
-  textEl.innerHTML = `
-    <span class="done">${escapeHtml(before)}</span>
-    <span class="current">${escapeHtml(current || ' ')}</span>
-    <span>${escapeHtml(after)}</span>
-  `;
+  if (currentMode === 'words') {
+    renderWordMode();
+  } else {
+    renderNormalMode();
+  }
+  
+  // 更新统计信息
   progressEl.textContent = Math.round((index / text.length) * 100) + '%';
   const acc = keystrokes ? Math.max(0, Math.round((1 - wrong/keystrokes) * 100)) : 0;
   accEl.textContent = acc + '%';
@@ -536,6 +537,79 @@ function render(){
   kpmEl.textContent = mins > 0 ? String(Math.round(keystrokes / mins)) : '0';
 }
 
+function renderWordMode() {
+  // 找到当前单词的开始和结束位置
+  let wordStart = index;
+  let wordEnd = index;
+  
+  // 向前找到单词开始
+  while (wordStart > 0 && text[wordStart - 1] !== ' ') {
+    wordStart--;
+  }
+  
+  // 向后找到单词结束
+  while (wordEnd < text.length && text[wordEnd] !== ' ') {
+    wordEnd++;
+  }
+  
+  // 如果当前位置是空格，跳到下一个单词
+  if (text[index] === ' ') {
+    // 跳过空格找到下一个单词
+    while (index < text.length && text[index] === ' ') {
+      index++;
+    }
+    
+    // 重新计算单词位置
+    wordStart = index;
+    wordEnd = index;
+    while (wordEnd < text.length && text[wordEnd] !== ' ') {
+      wordEnd++;
+    }
+  }
+  
+  const currentWord = text.slice(wordStart, wordEnd);
+  const currentWordIndex = index - wordStart; // 在当前单词中的位置
+  
+  let wordHtml = '';
+  for (let i = 0; i < currentWord.length; i++) {
+    const charIndex = wordStart + i;
+    const char = currentWord[i];
+    
+    if (i < currentWordIndex) {
+      // 已完成的字符
+      if (correctedCharacters.has(charIndex)) {
+        wordHtml += `<span class="corrected">${escapeHtml(char)}</span>`;
+      } else {
+        wordHtml += `<span class="done">${escapeHtml(char)}</span>`;
+      }
+    } else if (i === currentWordIndex) {
+      // 当前字符
+      if (errorCharacters.has(charIndex)) {
+        wordHtml += `<span class="current error">${escapeHtml(char || ' ')}</span>`;
+      } else {
+        wordHtml += `<span class="current">${escapeHtml(char || ' ')}</span>`;
+      }
+    } else {
+      // 未完成的字符
+      wordHtml += `<span class="pending">${escapeHtml(char)}</span>`;
+    }
+  }
+  
+  textEl.innerHTML = `<div class="word-mode">${wordHtml}</div>`;
+}
+
+function renderNormalMode() {
+  const before = text.slice(0, index);
+  const current = text[index] ?? '';
+  const after = text.slice(index + 1);
+
+  textEl.innerHTML = `
+    <span class="done">${escapeHtml(before)}</span>
+    <span class="current">${escapeHtml(current || ' ')}</span>
+    <span>${escapeHtml(after)}</span>
+  `;
+}
+
 function escapeHtml(s){
   return s.replace(/[&<>"]|\n/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\n':'<br>'}[ch]));
 }
@@ -543,6 +617,9 @@ function escapeHtml(s){
 function reset(){
   generateContent(currentMode);
   index = 0; keystrokes = 0; wrong = 0; startedAt = null; sessionStartTime = null;
+  // 清空错误字符跟踪
+  errorCharacters.clear();
+  correctedCharacters.clear();
   if (stageEl) stageEl.classList.remove('pop');
   if (hintEl) hintEl.textContent = '按任意键开始';
   render();
@@ -628,36 +705,48 @@ function onKey(e){
   }
   
   if (key === 'Backspace') {
-    e.preventDefault();
-    e.stopPropagation();
     if (index > 0) {
       index--;
+      // 清除当前位置的错误和修正标记
+      errorCharacters.delete(index);
+      correctedCharacters.delete(index);
       render();
       playClick('backspace');
     }
     return;
   }
-  
+
   if (key === 'Enter') {
-    e.preventDefault();
-    e.stopPropagation();
     const nextSpace = text.indexOf(' ', index);
     index = nextSpace === -1 ? text.length : nextSpace + 1;
     render();
     return;
   }
-  
+
   // Handle regular characters
   if (key && key.length === 1) {
-    e.preventDefault();
-    e.stopPropagation();
     
     keystrokes++;
     const expected = text[index];
     const isCorrect = key === expected;
     
     if (isCorrect) {
+      // 如果之前这个位置有错误，现在修正了，标记为已修正
+      if (errorCharacters.has(index)) {
+        errorCharacters.delete(index);
+        correctedCharacters.add(index);
+      }
+      
       index++;
+      
+      // 在单词模式下，如果完成了一个单词（下一个字符是空格或到达末尾），自动跳到下一个单词
+      if (currentMode === 'words' && (index >= text.length || text[index] === ' ')) {
+        // 跳过空格到下一个单词
+        while (index < text.length && text[index] === ' ') {
+          index++;
+        }
+      }
+      
       playClick('ok');
       if (stageEl) {
         stageEl.classList.remove('pop');
@@ -677,6 +766,8 @@ function onKey(e){
         }
       }
     } else {
+      // 标记错误字符位置
+      errorCharacters.add(index);
       wrong++;
       playClick('err');
       flashWrong();
@@ -698,15 +789,16 @@ function setupKeyboardEvents() {
 }
 
 function handleKeyDown(e) {
-  // 在打字模式下，阻止特定按键的默认行为，例如按 / 键时触发的浏览器搜索
-  if (isTypingMode() && isTypingKey(e.key) && !e.isComposing) {
-    // e.isComposing 用于判断中文输入法
-    e.preventDefault();
-    e.stopPropagation();
-  }
-  
   // 只在打字页面处理输入
   if (typingPage && typingPage.style.display !== 'none') {
+    // 在打字模式下，对所有可能的输入键都阻止默认行为
+    if (!e.isComposing && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      // 阻止所有可能影响打字的默认行为
+      if (isTypingKey(e.key) || e.key === 'Tab' || e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }
     onKey(e);
   } else if (homePage && homePage.style.display !== 'none') {
     // 处理主页的快捷键
@@ -735,7 +827,7 @@ function isTypingMode() {
 
 function isTypingKey(key) {
   // 判断是否为打字相关的按键
-  return key.length === 1 || key === 'Backspace' || key === 'Enter' || key === 'Space';
+  return key.length === 1 || key === 'Backspace' || key === 'Enter' || key === ' ' || key === 'Space';
 }
 
 function ensureFocus() {

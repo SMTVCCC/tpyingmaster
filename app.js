@@ -692,31 +692,24 @@ function flashWrong(){
   setTimeout(()=>cur.classList.remove('wrong'), 140);
 }
 
-// Enhanced event listeners with better browser compatibility
-// 添加多重事件监听以确保在所有浏览器中都能正常工作
+// 统一使用 keydown 事件处理，避免重复触发和浏览器兼容性问题
 function setupKeyboardEvents() {
-  // 主要的keydown事件监听器
   window.addEventListener('keydown', handleKeyDown, { passive: false });
-  
-  // 为了兼容某些浏览器，同时监听keypress事件
-  window.addEventListener('keypress', handleKeyPress, { passive: false });
-  
-  // 添加input事件作为备用（针对某些移动浏览器）
-  document.addEventListener('input', handleInput, { passive: false });
 }
 
 function handleKeyDown(e) {
-  // 防止某些浏览器的默认行为干扰
-  if (isTypingMode() && isTypingKey(e.key)) {
+  // 在打字模式下，阻止特定按键的默认行为，例如按 / 键时触发的浏览器搜索
+  if (isTypingMode() && isTypingKey(e.key) && !e.isComposing) {
+    // e.isComposing 用于判断中文输入法
     e.preventDefault();
     e.stopPropagation();
   }
   
-  // Only handle typing events when on typing page
+  // 只在打字页面处理输入
   if (typingPage && typingPage.style.display !== 'none') {
     onKey(e);
   } else if (homePage && homePage.style.display !== 'none') {
-    // Handle keyboard shortcuts on home page
+    // 处理主页的快捷键
     if (e.key >= '1' && e.key <= '6') {
       e.preventDefault();
       const modes = ['words', 'sentences', 'quotes', 'code', 'custom', 'test'];
@@ -733,26 +726,6 @@ function handleKeyDown(e) {
         }
       }
     }
-  }
-}
-
-function handleKeyPress(e) {
-  // 备用的keypress处理，主要用于字符输入
-  if (isTypingMode() && e.key.length === 1) {
-    e.preventDefault();
-    e.stopPropagation();
-    // 如果keydown没有处理，这里作为备用
-    if (typingPage && typingPage.style.display !== 'none') {
-      onKey(e);
-    }
-  }
-}
-
-function handleInput(e) {
-  // 处理某些浏览器可能遗漏的输入事件
-  if (isTypingMode() && e.target === document.body) {
-    e.preventDefault();
-    e.stopPropagation();
   }
 }
 

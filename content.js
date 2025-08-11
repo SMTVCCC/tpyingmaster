@@ -52,9 +52,9 @@ window.CONTENT_CODE_SNIPPETS = [
 window.CONTENT_TEMPLATES = {
   article: `Technology has revolutionized the way we communicate, work, and live. From smartphones that connect us instantly to people across the globe, to artificial intelligence that helps us solve complex problems, we are living in an era of unprecedented innovation. The digital transformation has not only changed how businesses operate but also how we learn, shop, and entertain ourselves. As we move forward, it's important to embrace these changes while being mindful of their impact on society and our daily lives.`,
   
-  dialogue: `"Good morning, Sarah! How was your weekend?" asked Tom as he entered the office.\n\n"It was wonderful, thank you for asking," Sarah replied with a smile. "I went hiking with my family and we discovered a beautiful trail near the lake. The weather was perfect, and we even saw some deer along the way."\n\n"That sounds amazing! I've been meaning to explore more outdoor activities myself," Tom said. "Would you recommend that trail for beginners?"\n\n"Absolutely! It's not too challenging, and the scenery is breathtaking. I can send you the location if you're interested.",
+  dialogue: `"Good morning, Sarah! How was your weekend?" asked Tom as he entered the office.\n\n"It was wonderful, thank you for asking," Sarah replied with a smile. "I went hiking with my family and we discovered a beautiful trail near the lake. The weather was perfect, and we even saw some deer along the way."\n\n"That sounds amazing! I've been meaning to explore more outdoor activities myself," Tom said. "Would you recommend that trail for beginners?"\n\n"Absolutely! It's not too challenging, and the scenery is breathtaking. I can send you the location if you're interested."`,
   
-  technical: `The implementation of RESTful APIs requires careful consideration of HTTP methods, status codes, and resource naming conventions. When designing endpoints, developers should follow the principle of statelessness, ensuring that each request contains all necessary information. Authentication mechanisms such as JWT tokens or OAuth 2.0 provide secure access control. Error handling should be consistent and informative, returning appropriate status codes like 404 for not found, 401 for unauthorized, and 500 for server errors. Proper documentation using tools like Swagger or OpenAPI specifications enhances API usability and adoption.`,
+  technical: `RESTful APIs require careful consideration of HTTP methods, status codes, and resource naming conventions. When designing endpoints, developers should follow the principle of statelessness, ensuring that each request contains all necessary information. Authentication mechanisms such as JWT tokens or OAuth 2.0 provide secure access control. Error handling should be consistent and informative, returning appropriate status codes like 404 for not found, 401 for unauthorized, and 500 for server errors. Proper documentation using tools like Swagger or OpenAPI specifications enhances API usability and adoption.`,
   
   numbers: `Invoice #2024-001: Total amount $1,234.56. Payment due: 30 days. Account: 4532-1234-5678-9012. Reference: TXN-789456123. Quantity: 25 units @ $49.38 each. Tax rate: 8.25%. Shipping: $15.00. Discount: 10% ($123.46). Net total: $1,111.10. Phone: (555) 123-4567. ZIP: 90210. Order date: 03/15/2024. Customer ID: C-98765. Product codes: SKU-001, SKU-002, SKU-003.`
 };
@@ -68,49 +68,3 @@ window.CONTENT_MODES = {
   custom: { name: '自定义文本', description: 'Custom • Your Text' },
   test: { name: '打字测试', description: 'Typing Test • 1 Minute' }
 };
-
-// 扩展内容 - 可以根据需要添加更多练习内容
-
-// 更多单词（可选）
-window.CONTENT_EXTENDED_WORDS = [
-  // 常用动词
-  'make', 'get', 'know', 'think', 'take', 'see', 'come', 'want', 'look', 'use',
-  'find', 'give', 'tell', 'work', 'call', 'try', 'ask', 'need', 'feel', 'become',
-  
-  // 常用形容词
-  'good', 'new', 'first', 'last', 'long', 'great', 'little', 'own', 'other', 'old',
-  'right', 'big', 'high', 'different', 'small', 'large', 'next', 'early', 'young', 'important',
-  
-  // 常用名词
-  'government', 'company', 'number', 'group', 'problem', 'fact', 'hand', 'place', 'case', 'part',
-  'week', 'eye', 'way', 'point', 'government', 'company', 'number', 'group', 'problem', 'fact'
-];
-
-// 更多句子（可选）
-window.CONTENT_EXTENDED_SENTENCES = [
-  "The early bird catches the worm, but the second mouse gets the cheese.",
-  "Innovation distinguishes between a leader and a follower.",
-  "The best time to plant a tree was 20 years ago. The second best time is now.",
-  "Quality is not an act, it is a habit that we must cultivate daily.",
-  "The journey of a thousand miles begins with a single step forward."
-];
-
-// 更多名言（可选）
-window.CONTENT_EXTENDED_QUOTES = [
-  "Be yourself; everyone else is already taken. - Oscar Wilde",
-  "Two things are infinite: the universe and human stupidity; and I'm not sure about the universe. - Albert Einstein",
-  "A room without books is like a body without a soul. - Marcus Tullius Cicero",
-  "You only live once, but if you do it right, once is enough. - Mae West",
-  "Be the change that you wish to see in the world. - Mahatma Gandhi"
-];
-
-// 更多代码片段（可选）
-window.CONTENT_EXTENDED_CODE_SNIPPETS = [
-  "const express = require('express'); const app = express();",
-  "import React, { useState, useEffect } from 'react';",
-  "SELECT * FROM users WHERE age > 18 ORDER BY name;",
-  "git add . && git commit -m 'Update features' && git push origin main",
-  "docker run -d -p 8080:80 --name myapp nginx:latest",
-  "pip install requests pandas numpy matplotlib seaborn",
-  "curl -X POST -H 'Content-Type: application/json' -d '{\"key\": \"value\"}' https://api.example.com/data"
-];

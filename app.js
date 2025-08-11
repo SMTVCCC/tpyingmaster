@@ -153,8 +153,8 @@ const progressEl = document.getElementById('progress');
 
 // Content banks for different practice modes - 现在从content.js文件管理
 // 这些变量将在content.js加载后被重新赋值
-let WORDS = `time year people way day man thing woman life child world school state family student group country problem hand party place case week company system program question work night point home water room mother area money story fact month lot right study book eye job word business issue side kind head house service friend father power hour game line end member law car city community name president team minute idea kid body information back parent face others level office door health person art war history party result change morning reason research girl guy moment air teacher force education`.
-  split(/\s+/);
+let WORDS = `time year people way day man thing woman life child world school state family student group country problem hand party place case week company system program question work night point home water room mother area money story fact month lot right study book eye job word business issue side kind head house service friend father power hour game line end member law car city community name president team minute idea kid body information back parent face others level office door health person art war history party result change morning reason research girl guy moment air teacher force education`
+  .split(/\s+/);
 
 let SENTENCES = [
   "The quick brown fox jumps over the lazy dog.",
@@ -599,15 +599,35 @@ function renderWordMode() {
 }
 
 function renderNormalMode() {
-  const before = text.slice(0, index);
-  const current = text[index] ?? '';
-  const after = text.slice(index + 1);
-
-  textEl.innerHTML = `
-    <span class="done">${escapeHtml(before)}</span>
-    <span class="current">${escapeHtml(current || ' ')}</span>
-    <span>${escapeHtml(after)}</span>
-  `;
+  let html = '';
+  
+  // 渲染已完成的字符
+  for (let i = 0; i < index; i++) {
+    const char = text[i];
+    if (correctedCharacters.has(i)) {
+      html += `<span class="corrected">${escapeHtml(char)}</span>`;
+    } else {
+      html += `<span class="done">${escapeHtml(char)}</span>`;
+    }
+  }
+  
+  // 渲染当前字符
+  if (index < text.length) {
+    const currentChar = text[index];
+    if (errorCharacters.has(index)) {
+      html += `<span class="current error">${escapeHtml(currentChar || ' ')}</span>`;
+    } else {
+      html += `<span class="current">${escapeHtml(currentChar || ' ')}</span>`;
+    }
+  }
+  
+  // 渲染未完成的字符
+  for (let i = index + 1; i < text.length; i++) {
+    const char = text[i];
+    html += `<span class="pending">${escapeHtml(char)}</span>`;
+  }
+  
+  textEl.innerHTML = html;
 }
 
 function escapeHtml(s){
@@ -657,6 +677,14 @@ function onKey(e){
   // 获取按键，处理不同浏览器的兼容性
   let key = e.key;
   
+  // 调试信息：记录按键事件
+  console.log('onKey called:', {
+    originalKey: e.key,
+    keyCode: e.keyCode,
+    shiftKey: e.shiftKey,
+    code: e.code
+  });
+  
   // 处理某些浏览器中key值不一致的问题
   if (!key || key === 'Unidentified') {
     // 备用方案：使用keyCode
@@ -666,8 +694,9 @@ function onKey(e){
       else if (e.keyCode === 32) key = ' ';
       else if (e.keyCode >= 48 && e.keyCode <= 57) key = String.fromCharCode(e.keyCode); // 数字
       else if (e.keyCode >= 65 && e.keyCode <= 90) {
-        // 字母
-        key = String.fromCharCode(e.keyCode + (e.shiftKey ? 0 : 32));
+        // 字母 - 修复大小写处理逻辑
+        // keyCode 65-90 对应 A-Z，需要根据 shiftKey 决定大小写
+        key = String.fromCharCode(e.shiftKey ? e.keyCode : e.keyCode + 32);
       } else if (e.keyCode >= 186 && e.keyCode <= 222) {
         // 标点符号等特殊字符的处理
         const specialKeys = {
@@ -725,6 +754,17 @@ function onKey(e){
 
   // Handle regular characters
   if (key && key.length === 1) {
+    
+    // 特别调试a、s、d字母
+    if (key === 'a' || key === 's' || key === 'd' || key === 'A' || key === 'S' || key === 'D') {
+      console.log('Processing letter:', {
+        key: key,
+        expected: text[index],
+        index: index,
+        keyCode: e.keyCode,
+        originalKey: e.key
+      });
+    }
     
     keystrokes++;
     const expected = text[index];
@@ -985,15 +1025,7 @@ const templateBtns = document.querySelectorAll('.template-btn');
 
 // Template texts
 // Template texts - 现在从content.js文件管理
-let TEMPLATES = {
-  article: `Technology has revolutionized the way we communicate, work, and live. From smartphones that connect us instantly to people across the globe, to artificial intelligence that helps us solve complex problems, we are living in an era of unprecedented innovation. The digital transformation has not only changed how businesses operate but also how we learn, shop, and entertain ourselves. As we move forward, it's important to embrace these changes while being mindful of their impact on society and our daily lives.`,
-  
-  dialogue: `"Good morning, Sarah! How was your weekend?" asked Tom as he entered the office.\n\n"It was wonderful, thank you for asking," Sarah replied with a smile. "I went hiking with my family and we discovered a beautiful trail near the lake. The weather was perfect, and we even saw some deer along the way."\n\n"That sounds amazing! I've been meaning to explore more outdoor activities myself," Tom said. "Would you recommend that trail for beginners?"\n\n"Absolutely! It's not too challenging, and the scenery is breathtaking. I can send you the location if you're interested."`,
-  
-  technical: `The implementation of RESTful APIs requires careful consideration of HTTP methods, status codes, and resource naming conventions. When designing endpoints, developers should follow the principle of statelessness, ensuring that each request contains all necessary information. Authentication mechanisms such as JWT tokens or OAuth 2.0 provide secure access control. Error handling should be consistent and informative, returning appropriate status codes like 404 for not found, 401 for unauthorized, and 500 for server errors. Proper documentation using tools like Swagger or OpenAPI specifications enhances API usability and adoption.`,
-  
-  numbers: `Invoice #2024-001: Total amount $1,234.56. Payment due: 30 days. Account: 4532-1234-5678-9012. Reference: TXN-789456123. Quantity: 25 units @ $49.38 each. Tax rate: 8.25%. Shipping: $15.00. Discount: 10% ($123.46). Net total: $1,111.10. Phone: (555) 123-4567. ZIP: 90210. Order date: 03/15/2024. Customer ID: C-98765. Product codes: SKU-001, SKU-002, SKU-003.`
-};
+// 使用 window.CONTENT_TEMPLATES 替代本地 TEMPLATES 定义
 
 function showCustomTextModal() {
   if (customTextModal) {
@@ -1066,7 +1098,7 @@ function updateStartButton() {
 }
 
 function loadTemplate(templateType) {
-  const templateText = TEMPLATES[templateType];
+  const templateText = window.CONTENT_TEMPLATES && window.CONTENT_TEMPLATES[templateType];
   if (templateText && customTextInput) {
     customTextInput.value = templateText;
     updateTextStats();

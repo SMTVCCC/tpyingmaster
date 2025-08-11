@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>键盘输入调试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .debug-info { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .test-area { border: 2px solid #ccc; padding: 20px; margin: 20px 0; min-height: 100px; }
+        .key-info { margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <h1>键盘输入调试工具</h1>
+    <p>请在下面的测试区域按键，查看键盘事件信息：</p>
+    
+    <div class="test-area" id="testArea" tabindex="0">
+        点击这里并按键进行测试...
+    </div>
+    
+    <div class="debug-info">
+        <h3>最近的按键事件：</h3>
+        <div id="keyEvents"></div>
+    </div>
+    
+    <div class="debug-info">
+        <h3>输入的字符：</h3>
+        <div id="inputChars"></div>
+    </div>
+    
+    <script>
+        const testArea = document.getElementById('testArea');
+        const keyEvents = document.getElementById('keyEvents');
+        const inputChars = document.getElementById('inputChars');
+        let eventCount = 0;
+        
+        function addKeyEvent(eventType, e) {
+            eventCount++;
+            const eventInfo = document.createElement('div');
+            eventInfo.className = 'key-info';
+            eventInfo.innerHTML = `
+                <strong>${eventCount}. ${eventType}:</strong> 
+                key="${e.key}" | 
+                code="${e.code}" | 
+                keyCode=${e.keyCode} | 
+                which=${e.which} | 
+                shiftKey=${e.shiftKey} | 
+                ctrlKey=${e.ctrlKey} | 
+                altKey=${e.altKey} | 
+                metaKey=${e.metaKey}
+            `;
+            keyEvents.insertBefore(eventInfo, keyEvents.firstChild);
+            
+            // 只保留最近10个事件
+            while (keyEvents.children.length > 10) {
+                keyEvents.removeChild(keyEvents.lastChild);
+            }
+        }
+        
+        function addInputChar(char) {
+            const charSpan = document.createElement('span');
+            charSpan.textContent = char;
+            charSpan.style.margin = '2px';
+            charSpan.style.padding = '2px 5px';
+            charSpan.style.background = '#e0e0e0';
+            charSpan.style.borderRadius = '3px';
+            inputChars.appendChild(charSpan);
+        }
+        
+        testArea.addEventListener('keydown', function(e) {
+            addKeyEvent('keydown', e);
+            
+            // 模拟打字应用的逻辑
+            let key = e.key;
+            
+            // 处理某些浏览器中key值不一致的问题
+            if (!key || key === 'Unidentified') {
+                if (e.keyCode) {
+                    if (e.keyCode === 8) key = 'Backspace';
+                    else if (e.keyCode === 13) key = 'Enter';
+                    else if (e.keyCode === 32) key = ' ';
+                    else if (e.keyCode >= 48 && e.keyCode <= 57) key = String.fromCharCode(e.keyCode);
+                    else if (e.keyCode >= 65 && e.keyCode <= 90) {
+                        key = String.fromCharCode(e.shiftKey ? e.keyCode : e.keyCode + 32);
+                    }
+                }
+            }
+            
+            // 处理Space键的兼容性问题
+            if (key === ' ' || key === 'Spacebar' || e.keyCode === 32) {
+                key = ' ';
+            }
+            
+            // 如果是可打印字符，添加到输入显示
+            if (key && key.length === 1) {
+                addInputChar(key);
+            } else if (key === 'Backspace') {
+                // 删除最后一个字符
+                if (inputChars.lastChild) {
+                    inputChars.removeChild(inputChars.lastChild);
+                }
+            }
+            
+            e.preventDefault();
+        });
+        
+        testArea.addEventListener('keyup', function(e) {
+            addKeyEvent('keyup', e);
+        });
+        
+        testArea.addEventListener('keypress', function(e) {
+            addKeyEvent('keypress', e);
+        });
+        
+        // 自动聚焦
+        testArea.focus();
+        
+        // 清除按钮
+        const clearBtn = document.createElement('button');
+        clearBtn.textContent = '清除记录';
+        clearBtn.onclick = function() {
+            keyEvents.innerHTML = '';
+            inputChars.innerHTML = '';
+            eventCount = 0;
+        };
+        document.body.appendChild(clearBtn);
+    </script>
+</body>
+</html>

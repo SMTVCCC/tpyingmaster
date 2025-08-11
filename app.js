@@ -271,12 +271,11 @@ function showTypingPage(mode) {
   generateContent(mode);
   reset();
   
-  // Focus the stage for immediate typing
-  if (stageEl) {
-    setTimeout(() => {
-      stageEl.focus();
-    }, 100);
-  }
+  // 初始化焦点管理，确保在所有浏览器中都能正常接收按键事件
+  setTimeout(() => {
+    initializeFocus();
+    ensureFocus();
+  }, 100);
 }
 
 function generateContent(mode) {
@@ -313,7 +312,7 @@ function generateContent(mode) {
 
 // Audio: generate click sounds using WebAudio to avoid asset files
 let audioCtx = null;
-let soundType = 'electronic'; // 'electronic' or 'keyboard'
+let soundType = 'keyboard'; // 'electronic' or 'keyboard'
 let keyboardSounds = {}; // Store keyboard sound audio elements
 let audioPool = { correct: [], error: [] }; // Audio pool for Safari optimization
 const AUDIO_POOL_SIZE = 5; // Number of audio instances in pool
@@ -572,8 +571,50 @@ function finishSession() {
 }
 
 function onKey(e){
-  if (e.metaKey || e.ctrlKey || e.altKey) return;
-  const key = e.key;
+  // 增强的按键处理，提高浏览器兼容性
+  // Ignore modifier keys (except Shift for uppercase)
+  if (e.metaKey || e.ctrlKey || e.altKey) {
+    return;
+  }
+  
+  // 获取按键，处理不同浏览器的兼容性
+  let key = e.key;
+  
+  // 处理某些浏览器中key值不一致的问题
+  if (!key || key === 'Unidentified') {
+    // 备用方案：使用keyCode
+    if (e.keyCode) {
+      if (e.keyCode === 8) key = 'Backspace';
+      else if (e.keyCode === 13) key = 'Enter';
+      else if (e.keyCode === 32) key = ' ';
+      else if (e.keyCode >= 48 && e.keyCode <= 57) key = String.fromCharCode(e.keyCode); // 数字
+      else if (e.keyCode >= 65 && e.keyCode <= 90) {
+        // 字母
+        key = String.fromCharCode(e.keyCode + (e.shiftKey ? 0 : 32));
+      } else if (e.keyCode >= 186 && e.keyCode <= 222) {
+        // 标点符号等特殊字符的处理
+        const specialKeys = {
+          186: e.shiftKey ? ':' : ';',
+          187: e.shiftKey ? '+' : '=',
+          188: e.shiftKey ? '<' : ',',
+          189: e.shiftKey ? '_' : '-',
+          190: e.shiftKey ? '>' : '.',
+          191: e.shiftKey ? '?' : '/',
+          192: e.shiftKey ? '~' : '`',
+          219: e.shiftKey ? '{' : '[',
+          220: e.shiftKey ? '|' : '\\',
+          221: e.shiftKey ? '}' : ']',
+          222: e.shiftKey ? '"' : "'"
+        };
+        key = specialKeys[e.keyCode] || key;
+      }
+    }
+  }
+  
+  // 处理Space键的兼容性问题
+  if (key === ' ' || key === 'Spacebar' || e.keyCode === 32) {
+    key = ' ';
+  }
   
   if (!startedAt) { 
     startedAt = Date.now(); 
@@ -586,10 +627,36 @@ function onKey(e){
     }
   }
   
-  if (key.length === 1) {
+  if (key === 'Backspace') {
+    e.preventDefault();
+    e.stopPropagation();
+    if (index > 0) {
+      index--;
+      render();
+      playClick('backspace');
+    }
+    return;
+  }
+  
+  if (key === 'Enter') {
+    e.preventDefault();
+    e.stopPropagation();
+    const nextSpace = text.indexOf(' ', index);
+    index = nextSpace === -1 ? text.length : nextSpace + 1;
+    render();
+    return;
+  }
+  
+  // Handle regular characters
+  if (key && key.length === 1) {
+    e.preventDefault();
+    e.stopPropagation();
+    
     keystrokes++;
     const expected = text[index];
-    if (key === expected) {
+    const isCorrect = key === expected;
+    
+    if (isCorrect) {
       index++;
       playClick('ok');
       if (stageEl) {
@@ -615,13 +682,6 @@ function onKey(e){
       flashWrong();
     }
     render();
-  } else if (key === 'Backspace') {
-    if (index > 0) index--;
-    render();
-  } else if (key === 'Enter') {
-    const nextSpace = text.indexOf(' ', index);
-    index = nextSpace === -1 ? text.length : nextSpace + 1;
-    render();
   }
 }
 
@@ -632,8 +692,26 @@ function flashWrong(){
   setTimeout(()=>cur.classList.remove('wrong'), 140);
 }
 
-// Event listeners
-window.addEventListener('keydown', (e) => {
+// Enhanced event listeners with better browser compatibility
+// 添加多重事件监听以确保在所有浏览器中都能正常工作
+function setupKeyboardEvents() {
+  // 主要的keydown事件监听器
+  window.addEventListener('keydown', handleKeyDown, { passive: false });
+  
+  // 为了兼容某些浏览器，同时监听keypress事件
+  window.addEventListener('keypress', handleKeyPress, { passive: false });
+  
+  // 添加input事件作为备用（针对某些移动浏览器）
+  document.addEventListener('input', handleInput, { passive: false });
+}
+
+function handleKeyDown(e) {
+  // 防止某些浏览器的默认行为干扰
+  if (isTypingMode() && isTypingKey(e.key)) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  
   // Only handle typing events when on typing page
   if (typingPage && typingPage.style.display !== 'none') {
     onKey(e);
@@ -656,7 +734,78 @@ window.addEventListener('keydown', (e) => {
       }
     }
   }
-});
+}
+
+function handleKeyPress(e) {
+  // 备用的keypress处理，主要用于字符输入
+  if (isTypingMode() && e.key.length === 1) {
+    e.preventDefault();
+    e.stopPropagation();
+    // 如果keydown没有处理，这里作为备用
+    if (typingPage && typingPage.style.display !== 'none') {
+      onKey(e);
+    }
+  }
+}
+
+function handleInput(e) {
+  // 处理某些浏览器可能遗漏的输入事件
+  if (isTypingMode() && e.target === document.body) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+}
+
+function isTypingMode() {
+  return typingPage && typingPage.style.display !== 'none';
+}
+
+function isTypingKey(key) {
+  // 判断是否为打字相关的按键
+  return key.length === 1 || key === 'Backspace' || key === 'Enter' || key === 'Space';
+}
+
+function ensureFocus() {
+  // 确保在打字模式下stage元素始终有焦点
+  if (isTypingMode() && stageEl) {
+    // 检查当前焦点元素
+    const activeElement = document.activeElement;
+    
+    // 如果焦点不在stage元素上，重新设置焦点
+    if (activeElement !== stageEl) {
+      // 确保stage元素可以接收键盘事件
+      if (stageEl.tabIndex < 0) {
+        stageEl.tabIndex = 0;
+      }
+      stageEl.focus({ preventScroll: true });
+    }
+  }
+}
+
+// 添加额外的焦点管理函数
+let focusInitialized = false;
+function initializeFocus() {
+  // 当进入打字页面时，确保正确设置焦点
+  if (stageEl && !focusInitialized) {
+    stageEl.tabIndex = 0;
+    stageEl.focus({ preventScroll: true });
+    
+    // 添加点击事件以重新获取焦点（只添加一次）
+    stageEl.addEventListener('click', () => {
+      if (isTypingMode()) {
+        stageEl.focus({ preventScroll: true });
+      }
+    });
+    
+    focusInitialized = true;
+  } else if (stageEl && focusInitialized) {
+    // 如果已经初始化过，只需要重新设置焦点
+    stageEl.focus({ preventScroll: true });
+  }
+}
+
+// 初始化键盘事件
+setupKeyboardEvents();
 
 // Typing page events
 if (restartBtn) {
@@ -953,4 +1102,19 @@ if (homePage && homePage.style.display !== 'none') {
   // If starting in typing mode, initialize with words
   generateContent('words');
   render();
+  // 确保在打字模式下正确初始化焦点
+  setTimeout(() => {
+    initializeFocus();
+    ensureFocus();
+  }, 200);
 }
+
+// 页面加载完成后的额外初始化
+document.addEventListener('DOMContentLoaded', () => {
+  // 确保所有元素都已加载
+  setTimeout(() => {
+    if (isTypingMode()) {
+      initializeFocus();
+    }
+  }, 300);
+});

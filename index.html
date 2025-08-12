@@ -18,7 +18,7 @@
   <!-- Prevent zoom on input focus (Safari) -->
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   
-  <title>Typing Master — 英文打字练习</title>
+  <title>Typing Master</title>
   
   <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="logo.svg">
@@ -74,7 +74,7 @@
 
     <main class="home-main">
       <div class="hero">
-        <h1>提升你的英文打字技能</h1>
+        <h1>提升你的英文打字速度</h1>
         <p>专业的打字练习平台，从基础到高级，全面提升你的打字速度和准确率</p>
 
       </div>
@@ -85,10 +85,12 @@
             <span style="font-size: 32px; font-weight: bold; color: black;">W</span>
           </div>
           <h3>单词练习</h3>
-          <p>练习常用英文单词，提升基础打字能力</p>
+          <p>练习常用英文单词，提升基础打字速度</p>
           <div class="card-stats">
             <span class="difficulty">初级</span>
-            <span class="duration">5-15分钟</span>
+            <span class="difficulty">中级</span>
+            <span class="difficulty">高级</span>
+            <span class="duration">5-30分钟</span>
           </div>
         </div>
 
@@ -101,8 +103,10 @@
           <h3>句子练习</h3>
           <p>练习完整句子，掌握标点符号和大小写</p>
           <div class="card-stats">
+            <span class="difficulty">初级</span>
             <span class="difficulty">中级</span>
-            <span class="duration">10-20分钟</span>
+            <span class="difficulty">高级</span>
+            <span class="duration">10-30分钟</span>
           </div>
         </div>
 
@@ -112,11 +116,13 @@
               <path fill="currentColor" d="M14 17h3l2-4V7h-6v6h3M6 17h3l2-4V7H5v6h3l-2 4Z"/>
             </svg>
           </div>
-          <h3>名言警句</h3>
-          <p>打字练习经典名言，在提升技能的同时获得启发</p>
+          <h3>作文练习</h3>
+          <p>练习写作，提升作文能力</p>
           <div class="card-stats">
+            <span class="difficulty">初级</span>
+            <span class="difficulty">中级</span>
             <span class="difficulty">高级</span>
-            <span class="duration">15-30分钟</span>
+            <span class="duration">10-45分钟</span>
           </div>
         </div>
 
@@ -154,11 +160,13 @@
               <path fill="currentColor" d="M12 20a8 8 0 0 1-8-8 8 8 0 0 1 8-8 8 8 0 0 1 8 8 8 8 0 0 1-8 8m0-18A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2m.5 5L11 8.5l1.5 1.5L14 8.5 12.5 7m-1 4L10 12.5l1.5 1.5L13 12.5 11.5 11m1 4L11 16.5l1.5 1.5L14 16.5 12.5 15Z"/>
             </svg>
           </div>
-          <h3>打字测试</h3>
-          <p>标准化打字测试，准确评估你的打字水平</p>
+          <h3>更多功能</h3>
+          <p>提供更多定制化功能，点击查看</p>
           <div class="card-stats">
-            <span class="difficulty">测试</span>
-            <span class="duration">1-5分钟</span>
+            <span class="difficulty">更多</span>
+            <span class="duration">小组</span>
+            <span class="duration">作业</span>
+            <span class="duration">定制化</span>
           </div>
         </div>
       </div>
@@ -181,6 +189,80 @@
           <div class="stat-card">
             <div class="stat-value" id="totalTime">0分钟</div>
             <div class="stat-label">总练习时间</div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Word Category Selection Page -->
+  <div id="wordCategoryPage" class="word-category-page" style="display: none;">
+    <header class="category-header">
+      <button id="categoryBackBtn" class="nav-btn">
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+        </svg>
+        <span>返回</span>
+      </button>
+      <h1>选择单词练习类型</h1>
+    </header>
+
+    <main class="category-main">
+      <div class="category-grid">
+        <div class="category-card" data-word-type="basic">
+          <div class="card-icon">
+            <svg viewBox="0 0 24 24" width="48" height="48">
+              <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2Z"/>
+            </svg>
+          </div>
+          <h3>初中词汇练习</h3>
+          <p>练习日常生活中的常用英文单词，适合初学者</p>
+          <div class="card-features">
+            <span class="feature">✓ 500+ 常用单词</span>
+            <span class="feature">✓ 生活场景词汇</span>
+            <span class="feature">✓ 适合初学者</span>
+          </div>
+          <div class="card-stats">
+            <span class="difficulty basic">基础</span>
+            <span class="duration">10-20分钟</span>
+          </div>
+        </div>
+
+        <div class="category-card" data-word-type="highschool">
+          <div class="card-icon">
+            <svg viewBox="0 0 24 24" width="48" height="48">
+              <path fill="currentColor" d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/>
+            </svg>
+          </div>
+          <h3>高中词汇练习</h3>
+          <p>涵盖高中阶段重要词汇，提升学术英语水平</p>
+          <div class="card-features">
+            <span class="feature">✓ 2000+ 高中词汇</span>
+            <span class="feature">✓ 学术场景词汇</span>
+            <span class="feature">✓ 考试重点词汇</span>
+          </div>
+          <div class="card-stats">
+            <span class="difficulty intermediate">中级</span>
+            <span class="duration">15-30分钟</span>
+          </div>
+        </div>
+
+        <div class="category-card" data-word-type="toefl">
+          <div class="card-icon">
+            <svg viewBox="0 0 24 24" width="48" height="48">
+              <path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+            </svg>
+          </div>
+          <h3>托福词汇练习</h3>
+          <p>专业托福考试词汇，助力留学考试高分</p>
+          <div class="card-features">
+            <span class="feature">✓ 3000+ 托福词汇</span>
+            <span class="feature">✓ 学术专业词汇</span>
+            <span class="feature">✓ 考试高频词汇</span>
+          </div>
+          <div class="card-stats">
+            <span class="difficulty advanced">高级</span>
+            <span class="duration">20-40分钟</span>
           </div>
         </div>
       </div>
@@ -253,6 +335,15 @@
               <span class="radio-custom"></span>
               <span class="option-text">键盘音效</span>
             </label>
+          </div>
+        </div>
+        <div class="setting-group">
+          <h3>视觉效果</h3>
+          <div class="setting-option">
+            <span class="option-text">屏幕震动</span>
+            <button id="screenShakeToggle" class="action-btn secondary toggle-btn">
+              <span class="toggle-text">关闭</span>
+            </button>
           </div>
         </div>
       </div>
@@ -382,10 +473,18 @@
     </div>
   </div>
 
-  <script src="content.js"></script>
+  <!-- 练习内容文件 - 按模块分离 -->
+  <script src="content/content-config.js"></script>
+<script src="content/content-words.js"></script>
+<script src="content/content-words-translations.js"></script>
+<script src="content/content-sentences.js"></script>
+<script src="content/content-quotes.js"></script>
+<script src="content/content-code.js"></script>
+<script src="content/content-custom.js"></script>
+<script src="content/content-test.js"></script>
   <script src="app.js"></script>
   <script>
-    // 页面加载完成后，尝试从content.js加载内容
+    // 页面加载完成后，尝试从内容文件加载内容
     document.addEventListener('DOMContentLoaded', function() {
       if (typeof loadContentFromFile === 'function') {
         loadContentFromFile();

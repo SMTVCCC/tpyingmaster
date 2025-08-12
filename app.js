@@ -64,6 +64,7 @@ function loadContentFromFile() {
 
 // Page elements
 const homePage = document.getElementById('homePage');
+const wordCategoryPage = document.getElementById('wordCategoryPage');
 const typingPage = document.getElementById('typingPage');
 
 // Browser detection and warning
@@ -153,62 +154,44 @@ const progressEl = document.getElementById('progress');
 
 // Content banks for different practice modes - 现在从content.js文件管理
 // 这些变量将在content.js加载后被重新赋值
-let WORDS = `time year people way day man thing woman life child world school state family student group country problem hand party place case week company system program question work night point home water room mother area money story fact month lot right study book eye job word business issue side kind head house service friend father power hour game line end member law car city community name president team minute idea kid body information back parent face others level office door health person art war history party result change morning reason research girl guy moment air teacher force education`
-  .split(/\s+/);
-
-let SENTENCES = [
-  "The quick brown fox jumps over the lazy dog.",
-  "Practice makes perfect when you keep trying.",
-  "Technology is advancing at an incredible pace.",
-  "Learning new skills requires patience and dedication.",
-  "Communication is the key to successful relationships.",
-  "Every challenge is an opportunity to grow stronger.",
-  "The future belongs to those who prepare today.",
-  "Success comes to those who work hard consistently.",
-  "Knowledge is power when applied with wisdom.",
-  "Dreams become reality through persistent effort."
-];
-
-let QUOTES = [
-  "The only way to do great work is to love what you do. - Steve Jobs",
-  "Life is what happens to you while you're busy making other plans. - John Lennon",
-  "The future belongs to those who believe in the beauty of their dreams. - Eleanor Roosevelt",
-  "It is during our darkest moments that we must focus to see the light. - Aristotle",
-  "The way to get started is to quit talking and begin doing. - Walt Disney",
-  "Your time is limited, so don't waste it living someone else's life. - Steve Jobs",
-  "If life were predictable it would cease to be life, and be without flavor. - Eleanor Roosevelt",
-  "In the end, we will remember not the words of our enemies, but the silence of our friends. - Martin Luther King Jr.",
-  "The only impossible journey is the one you never begin. - Tony Robbins",
-  "Success is not final, failure is not fatal: it is the courage to continue that counts. - Winston Churchill"
-];
-
-let CODE_SNIPPETS = [
-  "function calculateSum(a, b) { return a + b; }",
-  "const users = data.filter(user => user.active);",
-  "if (condition) { console.log('Hello World'); }",
-  "const promise = fetch('/api/data').then(res => res.json());",
-  "class Component extends React.Component { render() { return <div>Hello</div>; } }",
-  "const result = array.map(item => item.value * 2);",
-  "try { const data = JSON.parse(response); } catch (error) { console.error(error); }",
-  "const debounce = (func, delay) => { let timeoutId; return (...args) => { clearTimeout(timeoutId); timeoutId = setTimeout(() => func.apply(null, args), delay); }; };",
-  "async function fetchData() { const response = await fetch('/api'); return response.json(); }",
-  "const styles = { container: { display: 'flex', justifyContent: 'center', alignItems: 'center' } };"
-];
+// 内容变量 - 从content文件中加载
+let WORDS, SENTENCES, QUOTES, CODE_SNIPPETS;
 
 // Settings and state
 let enableSound = true;
+let enableVisualEffects = false; // 默认关闭视觉效果
 let currentMode = 'words';
 let customText = '';
 
+// 将currentMode暴露到window对象上以便调试
+window.currentMode = currentMode;
+
 // Practice modes configuration - 现在从content.js文件管理
+// 默认配置，如果content文件未加载则使用
 let MODES = {
   words: { name: '单词练习', description: 'English • Random Words' },
+  words_junior: { name: '初中词汇', description: 'Junior High • Basic Vocabulary' },
+  words_high: { name: '高中词汇', description: 'High School • Advanced Vocabulary' },
+  words_toefl: { name: '托福词汇', description: 'TOEFL • Academic Vocabulary' },
   sentences: { name: '句子练习', description: 'English • Sentences' },
   quotes: { name: '名言警句', description: 'English • Famous Quotes' },
   code: { name: '代码练习', description: 'Programming • Code Snippets' },
   custom: { name: '自定义文本', description: 'Custom • Your Text' },
   test: { name: '打字测试', description: 'Typing Test • 1 Minute' }
 };
+
+// 立即检查并更新MODES配置
+if (window.CONTENT_MODES) {
+  MODES = window.CONTENT_MODES;
+}
+
+// 当content文件加载后，再次更新MODES配置
+window.addEventListener('DOMContentLoaded', function() {
+  if (window.CONTENT_MODES) {
+    MODES = window.CONTENT_MODES;
+    console.log('MODES updated from CONTENT_MODES:', MODES);
+  }
+});
 
 // Statistics storage
 function getStats() {
@@ -253,13 +236,22 @@ function updateStatsDisplay() {
 // Page navigation
 function showHomePage() {
   if (homePage) homePage.style.display = 'block';
+  if (wordCategoryPage) wordCategoryPage.style.display = 'none';
   if (typingPage) typingPage.style.display = 'none';
   updateStatsDisplay();
 }
 
+function showWordCategoryPage() {
+  if (homePage) homePage.style.display = 'none';
+  if (wordCategoryPage) wordCategoryPage.style.display = 'block';
+  if (typingPage) typingPage.style.display = 'none';
+}
+
 function showTypingPage(mode) {
   currentMode = mode;
+  window.currentMode = mode; // 同步更新window.currentMode
   if (homePage) homePage.style.display = 'none';
+  if (wordCategoryPage) wordCategoryPage.style.display = 'none';
   if (typingPage) typingPage.style.display = 'block';
   
   // Update lesson title
@@ -293,10 +285,26 @@ function showTypingPage(mode) {
 
 function generateContent(mode) {
   currentMode = mode; // 确保当前模式被正确设置
+  window.currentMode = mode; // 同步更新window.currentMode
   
   switch (mode) {
     case 'words':
       text = randWords(80);
+      break;
+    case 'words_junior':
+      // 单词模式：只显示一个单词
+      const juniorWords = window.CONTENT_WORDS_JUNIOR || ['word'];
+      text = juniorWords[Math.floor(Math.random() * juniorWords.length)];
+      break;
+    case 'words_high':
+      // 单词模式：只显示一个单词
+      const highWords = window.CONTENT_WORDS_HIGH || ['word'];
+      text = highWords[Math.floor(Math.random() * highWords.length)];
+      break;
+    case 'words_toefl':
+      // 单词模式：只显示一个单词
+      const toeflWords = window.CONTENT_WORDS_TOEFL || ['word'];
+      text = toeflWords[Math.floor(Math.random() * toeflWords.length)];
       break;
     case 'sentences':
       text = SENTENCES[Math.floor(Math.random() * SENTENCES.length)];
@@ -523,6 +531,15 @@ function randWords(targetChars=80){
   return out;
 }
 
+function randWordsFromBank(wordBank, targetChars=80){
+  let out = '';
+  while (out.length < targetChars) {
+    const w = wordBank[(Math.random()*wordBank.length)|0];
+    out += (out ? ' ' : '') + w;
+  }
+  return out;
+}
+
 let text = '';
 let index = 0;
 let startedAt = null;
@@ -534,7 +551,7 @@ let errorCharacters = new Set(); // 存储错误字符的位置
 let correctedCharacters = new Set(); // 存储已修正的字符位置
 
 function render(){
-  if (currentMode === 'words') {
+  if (currentMode === 'words' || currentMode === 'words_junior' || currentMode === 'words_high' || currentMode === 'words_toefl') {
     renderWordMode();
   } else {
     renderNormalMode();
@@ -551,53 +568,24 @@ function render(){
 }
 
 function renderWordMode() {
-  // 找到当前单词的开始和结束位置
-  let wordStart = index;
-  let wordEnd = index;
-  
-  // 向前找到单词开始
-  while (wordStart > 0 && text[wordStart - 1] !== ' ') {
-    wordStart--;
-  }
-  
-  // 向后找到单词结束
-  while (wordEnd < text.length && text[wordEnd] !== ' ') {
-    wordEnd++;
-  }
-  
-  // 如果当前位置是空格，跳到下一个单词
-  if (text[index] === ' ') {
-    // 跳过空格找到下一个单词
-    while (index < text.length && text[index] === ' ') {
-      index++;
-    }
-    
-    // 重新计算单词位置
-    wordStart = index;
-    wordEnd = index;
-    while (wordEnd < text.length && text[wordEnd] !== ' ') {
-      wordEnd++;
-    }
-  }
-  
-  const currentWord = text.slice(wordStart, wordEnd);
-  const currentWordIndex = index - wordStart; // 在当前单词中的位置
+  // 在单词模式下，text就是当前单词
+  const currentWord = text;
+  const currentWordIndex = index; // 在当前单词中的位置
   
   let wordHtml = '';
   for (let i = 0; i < currentWord.length; i++) {
-    const charIndex = wordStart + i;
     const char = currentWord[i];
     
     if (i < currentWordIndex) {
       // 已完成的字符
-      if (correctedCharacters.has(charIndex)) {
+      if (correctedCharacters.has(i)) {
         wordHtml += `<span class="corrected">${escapeHtml(char)}</span>`;
       } else {
         wordHtml += `<span class="done">${escapeHtml(char)}</span>`;
       }
     } else if (i === currentWordIndex) {
       // 当前字符
-      if (errorCharacters.has(charIndex)) {
+      if (errorCharacters.has(i)) {
         wordHtml += `<span class="current error">${escapeHtml(char || ' ')}</span>`;
       } else {
         wordHtml += `<span class="current">${escapeHtml(char || ' ')}</span>`;
@@ -608,7 +596,15 @@ function renderWordMode() {
     }
   }
   
-  textEl.innerHTML = `<div class="word-mode">${wordHtml}</div>`;
+  // 获取中文翻译
+  const translation = window.getWordTranslation ? window.getWordTranslation(currentWord, currentMode) : '暂无翻译';
+  
+  textEl.innerHTML = `
+    <div class="word-mode">
+      <div class="word-display">${wordHtml}</div>
+      <div class="word-translation">${translation}</div>
+    </div>
+  `;
 }
 
 function renderNormalMode() {
@@ -829,21 +825,40 @@ function processCharacterInput(char) {
     }
     
     playClick('ok');
-    if (stageEl) {
+    if (stageEl && enableVisualEffects) {
+      console.log('Triggering visual effect - enableVisualEffects:', enableVisualEffects);
       stageEl.classList.remove('pop');
       void stageEl.offsetWidth; // restart animation
       stageEl.classList.add('pop');
+      console.log('Pop class added to stageEl');
+    } else {
+      console.log('Visual effect skipped - enableVisualEffects:', enableVisualEffects, 'stageEl:', !!stageEl);
     }
     
     // Check if finished
     if (index >= text.length) {
-      finishSession();
-      if (currentMode === 'words') {
-        // For words mode, continue with more content
-        text += ' ' + randWords(40);
+      // 在单词模式下，完成一个单词后自动切换到下一个单词
+      if (currentMode === 'words_junior' || currentMode === 'words_high' || currentMode === 'words_toefl') {
+        // 生成新的单词
+        generateContent(currentMode);
+        index = 0;
+        // 清空错误字符跟踪
+        errorCharacters.clear();
+        correctedCharacters.clear();
+        // 显示提示信息
+        if (hintEl) hintEl.textContent = '单词完成！继续下一个单词';
+        setTimeout(() => {
+          if (hintEl) hintEl.textContent = '';
+        }, 1000);
       } else {
-        // For other modes, show completion
-        if (hintEl) hintEl.textContent = '练习完成！按重打键继续';
+        finishSession();
+        if (currentMode === 'words') {
+          // For words mode, continue with more content
+          text += ' ' + randWords(40);
+        } else {
+          // For other modes, show completion
+          if (hintEl) hintEl.textContent = '练习完成！按重打键继续';
+        }
       }
     }
   } else {
@@ -903,6 +918,36 @@ if (backBtn) {
   backBtn.addEventListener('click', showHomePage);
 }
 
+// Word category page events
+const categoryBackBtn = document.getElementById('categoryBackBtn');
+const categoryCards = document.querySelectorAll('.category-card');
+
+if (categoryBackBtn) {
+  categoryBackBtn.addEventListener('click', showHomePage);
+}
+
+categoryCards.forEach(card => {
+  card.addEventListener('click', () => {
+    const wordType = card.dataset.wordType;
+    // 映射旧的wordType到新的模式名称
+    let mode;
+    switch(wordType) {
+      case 'basic':
+        mode = 'words_junior';
+        break;
+      case 'highschool':
+        mode = 'words_high';
+        break;
+      case 'toefl':
+        mode = 'words_toefl';
+        break;
+      default:
+        mode = 'words_junior';
+    }
+    showTypingPage(mode);
+  });
+});
+
 if (stageEl) {
   stageEl.addEventListener('click', () => stageEl.focus());
 }
@@ -914,6 +959,9 @@ practiceCards.forEach(card => {
     if (mode === 'custom') {
       // Show custom text modal instead of prompt
       showCustomTextModal();
+    } else if (mode === 'words') {
+      // Show word category selection page
+      showWordCategoryPage();
     } else {
       showTypingPage(mode);
     }
@@ -975,6 +1023,38 @@ if (savedSoundType) {
     radioToCheck.checked = true;
   }
 }
+
+// Handle screen shake toggle
+const screenShakeToggle = document.getElementById('screenShakeToggle');
+
+function updateToggleButton() {
+  if (screenShakeToggle) {
+    const toggleText = screenShakeToggle.querySelector('.toggle-text');
+    if (enableVisualEffects) {
+      screenShakeToggle.classList.add('active');
+      toggleText.textContent = '开启';
+    } else {
+      screenShakeToggle.classList.remove('active');
+      toggleText.textContent = '关闭';
+    }
+  }
+}
+
+if (screenShakeToggle) {
+  screenShakeToggle.addEventListener('click', () => {
+    enableVisualEffects = !enableVisualEffects;
+    localStorage.setItem('enableVisualEffects', enableVisualEffects.toString());
+    updateToggleButton();
+    console.log('Visual effects toggled:', enableVisualEffects);
+  });
+}
+
+// Load saved visual effects preference
+const savedVisualEffects = localStorage.getItem('enableVisualEffects');
+if (savedVisualEffects !== null) {
+  enableVisualEffects = savedVisualEffects === 'true';
+}
+updateToggleButton();
 
 // Custom Text Modal Functionality
 const customTextModal = document.getElementById('customTextModal');

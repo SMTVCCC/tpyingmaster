@@ -2,94 +2,109 @@
 
 ## 概述
 
-为了方便更新和修改打字练习内容，所有的练习文本现在都集中在 `content.js` 文件中管理。这样可以让内容的维护更加简单和高效。
+为了方便更新和修改打字练习内容，所有的练习文本现在都按模块分离到独立文件中管理。这样可以让内容的维护更加简单和高效，每个练习模式都有自己的专用文件。
 
 ## 文件结构
 
 ```
-├── content.js          # 所有练习内容的集中管理文件
-├── app.js             # 主应用逻辑（已修改为从content.js加载内容）
-├── index.html         # 主页面（已添加content.js引用）
-└── CONTENT_README.md  # 本说明文件
+├── content/               # 练习内容文件夹
+│   ├── content-config.js      # 练习模式配置文件
+│   ├── content-words.js       # 单词练习内容
+│   ├── content-sentences.js   # 句子练习内容
+│   ├── content-quotes.js      # 名言警句内容
+│   ├── content-code.js        # 代码练习内容
+│   ├── content-custom.js      # 自定义文本模板
+│   └── content-test.js        # 打字测试配置
+├── app.js                 # 主应用逻辑（已修改为从内容文件加载内容）
+└── index.html             # 主页面（已添加所有内容文件引用）
 ```
 
-## 内容文件说明
+## 各文件详细说明
 
-### content.js 包含以下内容：
+### content-config.js
+包含所有练习模式的基础配置信息：
+- 模式名称和描述
+- 文件加载顺序说明
 
-1. **单词练习内容** (`CONTENT_WORDS`)
-   - 常用英文单词列表
-   - 用于基础打字练习
+### content-words.js
+包含三个难度级别的单词练习内容：
+- `window.CONTENT_WORDS_JUNIOR` - 初中词汇数组（基础常用词汇）
+- `window.CONTENT_WORDS_HIGH` - 高中词汇数组（进阶学术词汇）
+- `window.CONTENT_WORDS_TOEFL` - 托福词汇数组（高级学术词汇）
+- `window.CONTENT_MODES_WORDS` - 单词练习模式配置（三个难度级别）
+- `window.CONTENT_WORDS` - 向后兼容变量（默认为初中词汇）
 
-2. **句子练习内容** (`CONTENT_SENTENCES`)
-   - 完整的英文句子
-   - 包含标点符号和大小写练习
+### content-sentences.js
+包含句子练习的内容：
+- `window.CONTENT_SENTENCES` - 句子数组
+- `window.CONTENT_MODES_SENTENCES` - 句子练习模式配置
 
-3. **名言警句内容** (`CONTENT_QUOTES`)
-   - 经典名人名言
-   - 带有作者署名
+### content-quotes.js
+包含名言警句练习的内容：
+- `window.CONTENT_QUOTES` - 名言警句数组
+- `window.CONTENT_MODES_QUOTES` - 名言警句练习模式配置
 
-4. **代码练习内容** (`CONTENT_CODE_SNIPPETS`)
-   - 编程代码片段
-   - 涵盖多种编程语言和场景
+### content-code.js
+包含代码练习的内容：
+- `window.CONTENT_CODE_SNIPPETS` - 代码片段数组
+- `window.CONTENT_MODES_CODE` - 代码练习模式配置
 
-5. **自定义模板** (`CONTENT_TEMPLATES`)
-   - 文章模板
-   - 对话模板
-   - 技术文档模板
-   - 数字练习模板
+### content-custom.js
+包含自定义文本练习的内容：
+- `window.CONTENT_TEMPLATES` - 自定义文本模板对象
+- `window.CONTENT_MODES_CUSTOM` - 自定义文本练习模式配置
 
-6. **练习模式配置** (`CONTENT_MODES`)
-   - 各种练习模式的名称和描述
+### content-test.js
+包含打字测试的配置：
+- `window.CONTENT_MODES_TEST` - 打字测试模式配置
 
-## 如何更新内容
+## 如何修改内容
 
-### 1. 添加新单词
-
-在 `content.js` 文件中找到 `window.CONTENT_WORDS` 部分，在字符串中添加新单词：
+### 添加新单词
+在 `content-words.js` 文件中找到 `window.CONTENT_WORDS` 部分，在字符串中添加新单词：
 
 ```javascript
-window.CONTENT_WORDS = `现有单词... 新单词1 新单词2 新单词3`
-  .split(/\s+/);
+window.CONTENT_WORDS = `time year people way day man thing woman life child world school state family student group country problem hand party place case week company system program question work night point home water room mother area money story fact month lot right study book eye job word business issue side kind head house service friend father power hour game line end member law car city community name president team minute idea kid body information back parent face others level office door health person art war history party result change morning reason research girl guy moment air teacher force education 新单词1 新单词2 新单词3`
+  .split(/\\s+/);
 ```
 
-### 2. 添加新句子
-
-在 `CONTENT_SENTENCES` 数组中添加新句子：
+### 添加新句子
+在 `content-sentences.js` 文件中找到 `window.CONTENT_SENTENCES` 数组，添加新句子：
 
 ```javascript
 window.CONTENT_SENTENCES = [
-  "现有句子...",
-  "这是一个新的练习句子。",
-  "另一个新句子用于练习。"
+  "The quick brown fox jumps over the lazy dog.",
+  "Practice makes perfect when you keep trying.",
+  // ... 现有句子
+  "这是一个新添加的句子。",
+  "Another new sentence for practice."
 ];
 ```
 
-### 3. 添加新名言
-
-在 `CONTENT_QUOTES` 数组中添加新名言：
+### 添加新名言警句
+在 `content-quotes.js` 文件中找到 `window.CONTENT_QUOTES` 数组，添加新名言：
 
 ```javascript
 window.CONTENT_QUOTES = [
-  "现有名言...",
-  "新的名言内容。 - 作者姓名"
+  "The only way to do great work is to love what you do. - Steve Jobs",
+  // ... 现有名言
+  "新的名言警句 - 作者姓名"
 ];
 ```
 
-### 4. 添加新代码片段
-
-在 `CONTENT_CODE_SNIPPETS` 数组中添加新代码：
+### 添加新代码片段
+在 `content-code.js` 文件中找到 `window.CONTENT_CODE_SNIPPETS` 数组，添加新代码：
 
 ```javascript
 window.CONTENT_CODE_SNIPPETS = [
-  "现有代码...",
-  "const newFunction = () => { console.log('新代码'); };"
+  "function calculateSum(a, b) { return a + b; }",
+  // ... 现有代码
+  "const newFunction = () => { console.log('Hello World'); };"
 ];
 ```
 
-### 5. 修改模板内容
-
-在 `CONTENT_TEMPLATES` 对象中修改或添加新模板：
+### 添加新自定义模板
+在 `content-custom.js` 文件中找到 `window.CONTENT_TEMPLATES` 对象，添加新模板：
 
 ```javascript
 window.CONTENT_TEMPLATES = {
@@ -97,62 +112,42 @@ window.CONTENT_TEMPLATES = {
   dialogue: `现有对话模板...`,
   technical: `现有技术模板...`,
   numbers: `现有数字模板...`,
-  // 添加新模板
-  newTemplate: `这是一个新的练习模板内容...`
+  newTemplate: `这是一个新的自定义模板内容...`
 };
 ```
 
-## 扩展内容
-
-`content.js` 文件还包含了扩展内容部分，可以根据需要启用：
-
-- `EXTENDED_WORDS` - 更多单词
-- `EXTENDED_SENTENCES` - 更多句子
-- `EXTENDED_QUOTES` - 更多名言
-- `EXTENDED_CODE_SNIPPETS` - 更多代码片段
-
-要启用这些扩展内容，可以在 `app.js` 中修改相应的变量赋值。
-
 ## 注意事项
 
-1. **字符转义**：在添加包含引号的内容时，注意使用反斜杠转义：
-   ```javascript
-   "He said, \"Hello world!\""
-   ```
-
-2. **换行符**：在对话模板中使用 `\n\n` 表示段落换行：
-   ```javascript
-   "第一段内容\n\n第二段内容"
-   ```
-
-3. **文件编码**：确保 `content.js` 文件使用 UTF-8 编码保存。
-
-4. **语法检查**：修改后建议在浏览器中测试，确保没有语法错误。
-
-## 技术实现
-
-- 内容通过全局变量 `window.CONTENT_*` 暴露
-- `app.js` 中的 `loadContentFromFile()` 函数负责加载内容
-- 页面加载时自动调用内容加载函数
-- 如果 `content.js` 未加载，系统会使用默认内容
+1. **文件顺序**：在 `index.html` 中，确保 `content-config.js` 最先加载，其他内容文件按需加载。
+2. **语法检查**：修改任何内容文件后，请检查 JavaScript 语法是否正确。
+3. **文件编码**：确保所有内容文件使用 UTF-8 编码保存。
+4. **备份**：在修改内容前，建议先备份原文件。
 
 ## 故障排除
 
-如果内容没有正确加载：
+如果练习内容没有正确显示，请检查：
 
-1. 检查浏览器控制台是否有错误信息
-2. 确认 `content.js` 文件路径正确
-3. 检查 `content.js` 文件语法是否正确
-4. 确认 `index.html` 中正确引用了 `content.js`
+1. 浏览器控制台是否有 JavaScript 错误
+2. 确认所有内容文件路径正确
+3. 检查内容文件语法是否正确
+4. 确认 `index.html` 中正确引用了所有内容文件
 
-## 备份建议
+## 开发建议
 
-在修改 `content.js` 之前，建议：
+在修改内容文件之前，建议：
 
-1. 备份原文件
-2. 使用版本控制系统（如 Git）
-3. 测试修改后的内容是否正常工作
+1. 在本地环境测试修改
+2. 使用浏览器开发者工具检查错误
+3. 逐个文件进行修改和测试
+4. 保持代码格式的一致性
 
----
+## 扩展功能
 
-通过这种方式，你可以轻松地管理和更新所有的打字练习内容，而无需修改复杂的应用逻辑代码。
+如果需要添加新的练习模式：
+
+1. 创建新的内容文件（如 `content-newmode.js`）
+2. 在 `content-config.js` 中添加新模式的配置
+3. 在 `index.html` 中引用新文件
+4. 在 `app.js` 中添加相应的处理逻辑
+
+这种模块化的结构使得添加新功能和维护现有内容变得更加简单和灵活。

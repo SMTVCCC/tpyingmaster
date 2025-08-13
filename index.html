@@ -577,6 +577,50 @@
 
   <!-- 练习内容文件 - 按模块分离 -->
   <script src="content/content-config.js"></script>
+<!-- 结果显示模态框 -->
+<div id="resultModal" class="modal result-modal">
+  <div class="modal-content result-content">
+    <div class="result-header">
+      <h2>练习结果</h2>
+      <span class="close-result">&times;</span>
+    </div>
+    <div class="result-body">
+      <div class="final-score">
+        <div class="score-circle">
+          <div class="score-number" id="finalScore">0</div>
+          <div class="score-label">综合评分</div>
+        </div>
+      </div>
+      <div class="result-details">
+        <div class="result-item">
+          <div class="result-label">准确率</div>
+          <div class="result-value" id="resultAccuracy">0%</div>
+          <div class="result-score" id="accuracyScore">0分</div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">打字速度</div>
+          <div class="result-value" id="resultWPM">0 WPM</div>
+          <div class="result-score" id="wpmScore">0分</div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">剩余时间</div>
+          <div class="result-value" id="resultRemainingTime">0秒</div>
+          <div class="result-score" id="timeScore">0分</div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">完成度</div>
+          <div class="result-value" id="resultCompletion">0%</div>
+          <div class="result-score" id="completionScore">0分</div>
+        </div>
+      </div>
+      <div class="result-actions">
+        <button class="btn btn-primary" id="restartFromResult">再次练习</button>
+        <button class="btn btn-secondary" id="backToHomeFromResult">返回首页</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="content/content-words.js"></script>
 <script src="content/content-words-translations.js"></script>
 <script src="content/content-words-pos.js"></script>

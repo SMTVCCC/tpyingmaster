@@ -777,6 +777,8 @@ let timerContainer = null; // 计时器容器元素
 let timerValue = null; // 计时器显示元素
 let countdownOverlay = null; // 倒计时覆盖层
 let countdownNumber = null; // 倒计时数字显示
+let practiceTimeLimit = 60; // 练习时间限制（秒）
+let remainingTime = 60; // 剩余时间（秒）
 
 // 计时器相关函数
 function initTimerElements() {
@@ -859,13 +861,23 @@ function startPracticeTimer() {
   if (!isSpeedTestMode) return;
   
   practiceStartTime = Date.now();
+  remainingTime = practiceTimeLimit;
   
   function updateTimer() {
     if (!practiceStartTime || practiceEndTime) return;
     
     const elapsed = Math.floor((Date.now() - practiceStartTime) / 1000);
-    const minutes = Math.floor(elapsed / 60);
-    const seconds = elapsed % 60;
+    remainingTime = practiceTimeLimit - elapsed;
+    
+    // 如果时间到了，自动结束练习
+    if (remainingTime <= 0) {
+      remainingTime = 0;
+      finishSession();
+      return;
+    }
+    
+    const minutes = Math.floor(remainingTime / 60);
+    const seconds = remainingTime % 60;
     
     if (timerValue) {
       timerValue.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
@@ -902,6 +914,7 @@ function resetTimer() {
   practiceStartTime = null;
   practiceEndTime = null;
   countdownSeconds = 3;
+  remainingTime = practiceTimeLimit;
   
   // 隐藏倒计时覆盖层
   if (countdownOverlay) {
@@ -909,7 +922,9 @@ function resetTimer() {
   }
   
   if (timerValue) {
-    timerValue.textContent = '00:00';
+    const minutes = Math.floor(practiceTimeLimit / 60);
+    const seconds = practiceTimeLimit % 60;
+    timerValue.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   }
   
   if (isSpeedTestMode) {
@@ -932,9 +947,9 @@ function render(){
   let wpm = 0;
   
   if (isSpeedTestMode && practiceStartTime) {
-    // 测速模式：严格按照计时器时间计算
-    const currentTime = practiceEndTime || Date.now();
-    mins = (currentTime - practiceStartTime) / 60000;
+    // 测速模式：使用倒计时逻辑计算
+    const elapsedTime = practiceTimeLimit - remainingTime;
+    mins = elapsedTime / 60;
     wpm = mins > 0 ? Math.round((index/5) / mins) : 0; // 5 chars per word
   } else if (startedAt) {
     // 普通模式：使用原来的计算方式
@@ -1059,8 +1074,8 @@ function finishSession() {
   let duration, mins, wpm;
   
   if (isSpeedTestMode && practiceStartTime) {
-    // 测速模式：使用严格计时
-    duration = (practiceEndTime - practiceStartTime) / 1000; // seconds
+    // 测速模式：使用实际使用的时间（总时间 - 剩余时间）
+    duration = practiceTimeLimit - remainingTime; // seconds
     mins = duration / 60;
     wpm = mins > 0 ? Math.round((index/5) / mins) : 0;
   } else {
@@ -1071,6 +1086,7 @@ function finishSession() {
   }
   
   const accuracy = keystrokes ? Math.max(0, Math.round((1 - wrong/keystrokes) * 100)) : 0;
+  const completion = Math.round((index / text.length) * 100);
   
   const sessionData = {
     mode: currentMode,
@@ -1085,12 +1101,102 @@ function finishSession() {
   
   saveStats(sessionData);
   
+  // 如果是测速模式，显示结果模态框
+  if (isSpeedTestMode) {
+    showResultModal(accuracy, wpm, remainingTime, completion);
+  }
+  
   // 如果是关卡模式且完成了练习，保存关卡进度
   if (currentWordType && currentLevel && completedWordsInLevel >= wordsPerLevel) {
     // 只有在准确率达到80%以上时才算完成关卡
     const levelCompleted = accuracy >= 80;
     saveLevelProgress(currentWordType, currentLevel, levelCompleted);
   }
+}
+
+// 评分计算函数
+function calculateScore(accuracy, wpm, remainingTime, completion) {
+  // 准确率评分 (0-30分)
+  let accuracyScore = 0;
+  if (accuracy >= 95) accuracyScore = 30;
+  else if (accuracy >= 90) accuracyScore = 25;
+  else if (accuracy >= 85) accuracyScore = 20;
+  else if (accuracy >= 80) accuracyScore = 15;
+  else if (accuracy >= 70) accuracyScore = 10;
+  else if (accuracy >= 60) accuracyScore = 5;
+  
+  // WPM评分 (0-30分)
+  let wpmScore = 0;
+  if (wpm >= 80) wpmScore = 30;
+  else if (wpm >= 60) wpmScore = 25;
+  else if (wpm >= 40) wpmScore = 20;
+  else if (wpm >= 30) wpmScore = 15;
+  else if (wpm >= 20) wpmScore = 10;
+  else if (wpm >= 10) wpmScore = 5;
+  
+  // 剩余时间评分 (0-20分)
+  let timeScore = 0;
+  const timePercentage = (remainingTime / practiceTimeLimit) * 100;
+  if (timePercentage >= 50) timeScore = 20;
+  else if (timePercentage >= 40) timeScore = 16;
+  else if (timePercentage >= 30) timeScore = 12;
+  else if (timePercentage >= 20) timeScore = 8;
+  else if (timePercentage >= 10) timeScore = 4;
+  
+  // 完成度评分 (0-20分)
+  let completionScore = 0;
+  if (completion >= 100) completionScore = 20;
+  else if (completion >= 90) completionScore = 18;
+  else if (completion >= 80) completionScore = 16;
+  else if (completion >= 70) completionScore = 14;
+  else if (completion >= 60) completionScore = 12;
+  else if (completion >= 50) completionScore = 10;
+  else if (completion >= 40) completionScore = 8;
+  else if (completion >= 30) completionScore = 6;
+  else if (completion >= 20) completionScore = 4;
+  else if (completion >= 10) completionScore = 2;
+  
+  const totalScore = accuracyScore + wpmScore + timeScore + completionScore;
+  
+  return {
+    accuracy: accuracyScore,
+    wpm: wpmScore,
+    time: timeScore,
+    completion: completionScore,
+    total: totalScore
+  };
+}
+
+// 显示结果模态框
+function showResultModal(accuracy, wpm, remainingTime, completion) {
+  const scores = calculateScore(accuracy, wpm, remainingTime, completion);
+  
+  // 更新模态框内容
+  document.getElementById('finalScore').textContent = scores.total;
+  document.getElementById('resultAccuracy').textContent = accuracy + '%';
+  document.getElementById('accuracyScore').textContent = scores.accuracy + '分';
+  document.getElementById('resultWPM').textContent = wpm + ' WPM';
+  document.getElementById('wpmScore').textContent = scores.wpm + '分';
+  document.getElementById('resultRemainingTime').textContent = remainingTime + '秒';
+  document.getElementById('timeScore').textContent = scores.time + '分';
+  document.getElementById('resultCompletion').textContent = completion + '%';
+  document.getElementById('completionScore').textContent = scores.completion + '分';
+  
+  // 显示模态框
+  const modal = document.getElementById('resultModal');
+  modal.style.display = 'block';
+  
+  // 添加动画效果
+  setTimeout(() => {
+    modal.classList.add('show');
+  }, 10);
+}
+
+// 隐藏结果模态框
+function hideResultModal() {
+  const modal = document.getElementById('resultModal');
+  modal.style.display = 'none';
+  modal.classList.remove('show');
 }
 
 function showLevelCompletionModal() {
@@ -1810,6 +1916,38 @@ templateBtns.forEach(btn => {
     loadTemplate(templateType);
   });
 });
+
+// 结果模态框事件监听器
+const resultModal = document.getElementById('resultModal');
+const closeResult = document.querySelector('.close-result');
+const restartFromResult = document.getElementById('restartFromResult');
+const backToHomeFromResult = document.getElementById('backToHomeFromResult');
+
+if (closeResult) {
+  closeResult.addEventListener('click', hideResultModal);
+}
+
+if (restartFromResult) {
+  restartFromResult.addEventListener('click', () => {
+    hideResultModal();
+    reset();
+  });
+}
+
+if (backToHomeFromResult) {
+  backToHomeFromResult.addEventListener('click', () => {
+    hideResultModal();
+    showHomePage();
+  });
+}
+
+if (resultModal) {
+  resultModal.addEventListener('click', (e) => {
+    if (e.target === resultModal) {
+      hideResultModal();
+    }
+  });
+}
 
 // Initialize
 let inputSystemInitialized = false;

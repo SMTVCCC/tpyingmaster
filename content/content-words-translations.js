@@ -1035,14 +1035,33 @@ window.CONTENT_WORDS_TOEFL_TRANSLATIONS = {
 window.getWordTranslation = function(word, mode) {
   const lowerWord = word.toLowerCase();
   
+  let translation = '';
+  let partOfSpeech = '';
+  
+  // 获取中文翻译
   switch(mode) {
     case 'words_junior':
-      return window.CONTENT_WORDS_JUNIOR_TRANSLATIONS[lowerWord] || '暂无翻译';
+      translation = window.CONTENT_WORDS_JUNIOR_TRANSLATIONS[lowerWord] || '暂无翻译';
+      break;
     case 'words_high':
-      return window.CONTENT_WORDS_HIGH_TRANSLATIONS[lowerWord] || '暂无翻译';
+      translation = window.CONTENT_WORDS_HIGH_TRANSLATIONS[lowerWord] || '暂无翻译';
+      break;
     case 'words_toefl':
-      return window.CONTENT_WORDS_TOEFL_TRANSLATIONS[lowerWord] || '暂无翻译';
+      translation = window.CONTENT_WORDS_TOEFL_TRANSLATIONS[lowerWord] || '暂无翻译';
+      break;
     default:
-      return '暂无翻译';
+      translation = '暂无翻译';
+  }
+  
+  // 获取词性信息
+  if (window.getWordPartOfSpeech && translation !== '暂无翻译') {
+    partOfSpeech = window.getWordPartOfSpeech(lowerWord, mode);
+  }
+  
+  // 组合翻译和词性
+  if (partOfSpeech) {
+    return `${partOfSpeech} ${translation}`;
+  } else {
+    return translation;
   }
 };

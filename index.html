@@ -126,17 +126,18 @@
           </div>
         </div>
 
-        <div class="practice-card" data-mode="code">
+        <div class="practice-card" data-mode="speed-test">
           <div class="card-icon">
             <svg viewBox="0 0 24 24" width="32" height="32">
-              <path fill="currentColor" d="M8 3a2 2 0 0 0-2 2v4.586l-1.707 1.707a1 1 0 0 0 0 1.414L6 14.414V19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-4.586l1.707-1.707a1 1 0 0 0 0-1.414L18 9.586V5a2 2 0 0 0-2-2H8zm2 2h4v2h-4V5zm0 4h4v2h-4V9zm0 4h4v2h-4v-2z"/>
+              <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
             </svg>
           </div>
-          <h3>代码练习</h3>
-          <p>练习编程代码片段，提升编程打字效率</p>
+          <h3>速度测试</h3>
+          <p>测试你的打字速度和准确率，获得专业评估</p>
           <div class="card-stats">
-            <span class="difficulty">专业</span>
-            <span class="duration">20-40分钟</span>
+            <span class="difficulty">等级评估</span>
+            <span class="difficulty">匹配挑战</span>
+            <span class="duration">1-5分钟</span>
           </div>
         </div>
 
@@ -269,6 +270,93 @@
     </main>
   </div>
 
+  <!-- Level Selection Page -->
+  <div id="levelSelectionPage" class="level-selection-page" style="display: none;">
+    <header class="category-header">
+      <button id="levelBackBtn" class="nav-btn">
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+        </svg>
+        <span>返回</span>
+      </button>
+      <h1 id="levelPageTitle">选择关卡</h1>
+    </header>
+
+    <main class="category-main">
+      <div class="level-info">
+        <div class="level-description">
+          <h3 id="levelModeTitle">初中词汇练习</h3>
+          <p id="levelModeDesc">每个关卡包含20个单词，完成一个关卡后可解锁下一关卡</p>
+        </div>
+        <div class="level-progress">
+          <span class="progress-text">总进度: <span id="totalProgress">0/25</span> 关卡</span>
+          <div class="progress-bar">
+            <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+      
+      <div id="levelGrid" class="level-grid">
+        <!-- 关卡将通过JavaScript动态生成 -->
+      </div>
+    </main>
+  </div>
+
+  <!-- Speed Test Page -->
+  <div id="speedTestPage" class="speed-test-page" style="display: none;">
+    <header class="category-header">
+      <button id="speedTestBackBtn" class="nav-btn">
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+        </svg>
+        <span>返回</span>
+      </button>
+      <h1>速度测试</h1>
+    </header>
+
+    <main class="category-main">
+      <div class="speed-test-grid">
+        <div class="speed-test-card" data-test-type="level-assessment">
+          <div class="card-icon">
+            <svg viewBox="0 0 24 24" width="48" height="48">
+              <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+          </div>
+          <h3>等级评估</h3>
+          <p>通过专业测试评估你的打字水平，获得个性化建议</p>
+          <div class="card-features">
+            <span class="feature">✓ 1分钟标准测试</span>
+            <span class="feature">✓ 专业等级评估</span>
+            <span class="feature">✓ 详细分析报告</span>
+          </div>
+          <div class="card-stats">
+            <span class="difficulty assessment">评估测试</span>
+            <span class="duration">1分钟</span>
+          </div>
+        </div>
+
+        <div class="speed-test-card disabled" data-test-type="match-challenge">
+          <div class="card-icon">
+            <svg viewBox="0 0 24 24" width="48" height="48">
+              <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2Z"/>
+            </svg>
+          </div>
+          <h3>匹配挑战</h3>
+          <p>与其他用户进行实时打字对战，挑战你的极限</p>
+          <div class="card-features">
+            <span class="feature">✓ 实时对战</span>
+            <span class="feature">✓ 排行榜系统</span>
+            <span class="feature">✓ 多人竞技</span>
+          </div>
+          <div class="card-stats">
+            <span class="difficulty challenge">敬请期待</span>
+            <span class="duration">即将推出</span>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
   <!-- Typing Practice Page -->
   <div id="typingPage" class="typing-page" style="display: none;">
     <div class="app">
@@ -285,6 +373,12 @@
           </svg>
           <span>重打</span>
         </button>
+        <div class="timer-container" id="timerContainer" style="display: none;">
+          <div class="timer-display">
+            <span class="timer-label">计时</span>
+            <span class="timer-value" id="timerValue">00:00</span>
+          </div>
+        </div>
         <div class="spacer"></div>
         <button id="soundBtn" class="icon-btn" title="音效">
           <svg id="soundOn" viewBox="0 0 24 24" width="20" height="20">
@@ -311,6 +405,14 @@
         <div class="metric"><span class="label">按键/分</span><span id="kpm" class="value">0</span></div>
         <div class="metric"><span class="label">进度</span><span id="progress" class="value">0%</span></div>
       </footer>
+    </div>
+  </div>
+
+  <!-- 倒计时覆盖层 -->
+  <div id="countdownOverlay" class="countdown-overlay" style="display: none;">
+    <div class="countdown-display">
+      <div class="countdown-number" id="countdownNumber">3</div>
+      <div class="countdown-text">准备开始</div>
     </div>
   </div>
 
@@ -477,6 +579,7 @@
   <script src="content/content-config.js"></script>
 <script src="content/content-words.js"></script>
 <script src="content/content-words-translations.js"></script>
+<script src="content/content-words-pos.js"></script>
 <script src="content/content-sentences.js"></script>
 <script src="content/content-quotes.js"></script>
 <script src="content/content-code.js"></script>

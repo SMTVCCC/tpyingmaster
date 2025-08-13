@@ -65,6 +65,8 @@ function loadContentFromFile() {
 // Page elements
 const homePage = document.getElementById('homePage');
 const wordCategoryPage = document.getElementById('wordCategoryPage');
+const levelSelectionPage = document.getElementById('levelSelectionPage');
+const speedTestPage = document.getElementById('speedTestPage');
 const typingPage = document.getElementById('typingPage');
 
 // Browser detection and warning
@@ -163,6 +165,14 @@ let enableVisualEffects = false; // 默认关闭视觉效果
 let currentMode = 'words';
 let customText = '';
 
+// 关卡系统相关变量
+let currentWordType = ''; // 当前选择的词汇类型 (junior/high/toefl)
+let currentLevel = 1; // 当前关卡
+let wordsPerLevel = 20; // 每个关卡的单词数量
+let completedWordsInLevel = 0; // 当前关卡已完成的单词数量
+let currentLevelWords = []; // 当前关卡的单词列表
+let currentWordIndex = 0; // 当前单词在关卡中的索引
+
 // 将currentMode暴露到window对象上以便调试
 window.currentMode = currentMode;
 
@@ -237,6 +247,8 @@ function updateStatsDisplay() {
 function showHomePage() {
   if (homePage) homePage.style.display = 'block';
   if (wordCategoryPage) wordCategoryPage.style.display = 'none';
+  if (levelSelectionPage) levelSelectionPage.style.display = 'none';
+  if (speedTestPage) speedTestPage.style.display = 'none';
   if (typingPage) typingPage.style.display = 'none';
   updateStatsDisplay();
 }
@@ -244,15 +256,46 @@ function showHomePage() {
 function showWordCategoryPage() {
   if (homePage) homePage.style.display = 'none';
   if (wordCategoryPage) wordCategoryPage.style.display = 'block';
+  if (levelSelectionPage) levelSelectionPage.style.display = 'none';
+  if (speedTestPage) speedTestPage.style.display = 'none';
+  if (typingPage) typingPage.style.display = 'none';
+}
+
+function showLevelSelectionPage(wordType) {
+  currentWordType = wordType;
+  if (homePage) homePage.style.display = 'none';
+  if (wordCategoryPage) wordCategoryPage.style.display = 'none';
+  if (speedTestPage) speedTestPage.style.display = 'none';
+  if (levelSelectionPage) levelSelectionPage.style.display = 'block';
+  if (typingPage) typingPage.style.display = 'none';
+  
+  // 更新关卡选择页面的信息
+  updateLevelSelectionPage();
+}
+
+function showSpeedTestPage() {
+  if (homePage) homePage.style.display = 'none';
+  if (wordCategoryPage) wordCategoryPage.style.display = 'none';
+  if (levelSelectionPage) levelSelectionPage.style.display = 'none';
+  if (speedTestPage) speedTestPage.style.display = 'block';
   if (typingPage) typingPage.style.display = 'none';
 }
 
 function showTypingPage(mode) {
   currentMode = mode;
   window.currentMode = mode; // 同步更新window.currentMode
+  
+  // 检查是否为测速模式
+  isSpeedTestMode = (mode === 'test' || mode.includes('speed'));
+  
   if (homePage) homePage.style.display = 'none';
   if (wordCategoryPage) wordCategoryPage.style.display = 'none';
+  if (levelSelectionPage) levelSelectionPage.style.display = 'none';
+  if (speedTestPage) speedTestPage.style.display = 'none';
   if (typingPage) typingPage.style.display = 'block';
+  
+  // 初始化计时器元素
+  initTimerElements();
   
   // Update lesson title
   if (promptMeta) {
@@ -329,6 +372,179 @@ function generateContent(mode) {
   if (promptMeta) {
     promptMeta.textContent = MODES[mode] ? `${MODES[mode].description}` : 'English • Random Words';
   }
+}
+
+// 关卡系统相关函数
+function getWordsByType(wordType) {
+  switch (wordType) {
+    case 'junior':
+      return window.CONTENT_WORDS_JUNIOR || ['word'];
+    case 'high':
+      return window.CONTENT_WORDS_HIGH || ['word'];
+    case 'toefl':
+      return window.CONTENT_WORDS_TOEFL || ['word'];
+    default:
+      return ['word'];
+  }
+}
+
+function getTotalLevels(wordType) {
+  const words = getWordsByType(wordType);
+  return Math.ceil(words.length / wordsPerLevel);
+}
+
+// 简单的伪随机数生成器，基于种子确保结果可重现
+function seededRandom(seed) {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
+
+// 使用种子打乱数组，确保相同种子产生相同结果
+function shuffleArrayWithSeed(array, seed) {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(seededRandom(seed + i) * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+function getLevelWords(wordType, level) {
+  const words = getWordsByType(wordType);
+  const startIndex = (level - 1) * wordsPerLevel;
+  const endIndex = Math.min(startIndex + wordsPerLevel, words.length);
+  
+  // 获取该关卡的固定单词
+  const levelWords = words.slice(startIndex, endIndex);
+  
+  // 使用关卡号和词汇类型作为种子，确保每个关卡的单词顺序固定但随机
+  const seed = (wordType + level).split('').reduce((a, b) => {
+    a = ((a << 5) - a) + b.charCodeAt(0);
+    return a & a;
+  }, 0);
+  
+  // 返回打乱顺序但固定的单词列表
+  return shuffleArrayWithSeed(levelWords, seed);
+}
+
+function getLevelProgress(wordType) {
+  const stats = getStats();
+  const levelKey = `${wordType}_levels`;
+  return stats[levelKey] || {};
+}
+
+function saveLevelProgress(wordType, level, completed = false) {
+  const stats = getStats();
+  const levelKey = `${wordType}_levels`;
+  if (!stats[levelKey]) {
+    stats[levelKey] = {};
+  }
+  stats[levelKey][level] = {
+    completed: completed,
+    lastPlayed: Date.now()
+  };
+  localStorage.setItem('typingStats', JSON.stringify(stats));
+}
+
+function isLevelUnlocked(wordType, level) {
+  if (level === 1) return true; // 第一关总是解锁的
+  
+  const progress = getLevelProgress(wordType);
+  const previousLevel = level - 1;
+  return progress[previousLevel] && progress[previousLevel].completed;
+}
+
+function updateLevelSelectionPage() {
+  const levelDescription = document.querySelector('.level-description h3');
+  const levelDescriptionText = document.querySelector('.level-description p');
+  const progressText = document.querySelector('.progress-text');
+  const progressFill = document.querySelector('.progress-fill');
+  const levelGrid = document.querySelector('.level-grid');
+  
+  if (!levelDescription || !levelGrid) return;
+  
+  // 更新页面标题和描述
+  const typeNames = {
+    'junior': '初中词汇练习',
+    'high': '高中词汇练习', 
+    'toefl': '托福词汇练习'
+  };
+  
+  levelDescription.textContent = typeNames[currentWordType] || '词汇练习';
+  if (levelDescriptionText) {
+    levelDescriptionText.textContent = '每个关卡包含20个单词，完成当前关卡后解锁下一关卡。';
+  }
+  
+  // 计算进度
+  const totalLevels = getTotalLevels(currentWordType);
+  const progress = getLevelProgress(currentWordType);
+  const completedLevels = Object.keys(progress).filter(level => progress[level].completed).length;
+  const progressPercentage = totalLevels > 0 ? (completedLevels / totalLevels) * 100 : 0;
+  
+  // 更新进度显示
+  if (progressText) {
+    progressText.textContent = `进度: ${completedLevels}/${totalLevels} 关卡`;
+  }
+  if (progressFill) {
+    progressFill.style.width = `${progressPercentage}%`;
+  }
+  
+  // 生成关卡网格
+  levelGrid.innerHTML = '';
+  
+  for (let level = 1; level <= totalLevels; level++) {
+    const levelCard = document.createElement('div');
+    levelCard.className = 'level-card';
+    
+    const isUnlocked = isLevelUnlocked(currentWordType, level);
+    const isCompleted = progress[level] && progress[level].completed;
+    
+    if (!isUnlocked) {
+      levelCard.classList.add('locked');
+    } else if (isCompleted) {
+      levelCard.classList.add('completed');
+    }
+    
+    const levelWords = getLevelWords(currentWordType, level);
+    
+    levelCard.innerHTML = `
+      <div class="level-number">${level}</div>
+      <div class="level-title">关卡 ${level}</div>
+      <div class="level-words">${levelWords.length} 个单词</div>
+      <div class="level-status ${isCompleted ? 'completed' : (isUnlocked ? 'available' : 'locked')}">
+        ${isCompleted ? '已完成' : (isUnlocked ? '可练习' : '未解锁')}
+      </div>
+    `;
+    
+    if (isUnlocked) {
+      levelCard.setAttribute('data-level', level);
+    }
+    
+    levelGrid.appendChild(levelCard);
+  }
+}
+
+function startLevelPractice(wordType, level) {
+  currentLevel = level;
+  currentWordType = wordType;
+  completedWordsInLevel = 0; // 重置单词计数器
+  currentWordIndex = 0; // 重置单词索引
+  currentLevelWords = getLevelWords(wordType, level); // 获取关卡的固定单词列表
+  
+  // 设置当前模式
+  const modeMap = {
+    'junior': 'words_junior',
+    'high': 'words_high',
+    'toefl': 'words_toefl'
+  };
+  
+  currentMode = modeMap[wordType];
+  
+  // 从关卡的第一个单词开始
+  text = currentLevelWords[currentWordIndex] || 'word';
+  
+  // 显示打字页面
+  showTypingPage(currentMode);
 }
 
 // Audio: generate click sounds using WebAudio to avoid asset files
@@ -550,6 +766,157 @@ let sessionStartTime = null;
 let errorCharacters = new Set(); // 存储错误字符的位置
 let correctedCharacters = new Set(); // 存储已修正的字符位置
 
+// 计时器相关变量
+let isSpeedTestMode = false; // 是否为测速模式
+let countdownTimer = null; // 倒计时定时器
+let practiceTimer = null; // 练习计时器
+let countdownSeconds = 3; // 倒计时秒数
+let practiceStartTime = null; // 练习开始时间（用于严格计时）
+let practiceEndTime = null; // 练习结束时间
+let timerContainer = null; // 计时器容器元素
+let timerValue = null; // 计时器显示元素
+let countdownOverlay = null; // 倒计时覆盖层
+let countdownNumber = null; // 倒计时数字显示
+
+// 计时器相关函数
+function initTimerElements() {
+  timerContainer = document.getElementById('timerContainer');
+  timerValue = document.getElementById('timerValue');
+  countdownOverlay = document.getElementById('countdownOverlay');
+  countdownNumber = document.getElementById('countdownNumber');
+}
+
+function showTimer() {
+  if (timerContainer) {
+    timerContainer.style.display = 'flex';
+  }
+}
+
+function hideTimer() {
+  if (timerContainer) {
+    timerContainer.style.display = 'none';
+  }
+}
+
+function startCountdown() {
+  if (!isSpeedTestMode) return;
+  
+  countdownSeconds = 3;
+  
+  // 显示全屏倒计时覆盖层
+  if (countdownOverlay) {
+    countdownOverlay.style.display = 'flex';
+  }
+  
+  function updateCountdown() {
+    if (countdownNumber) {
+      // 移除之前的样式类
+      countdownNumber.classList.remove('final', 'go');
+      
+      if (countdownSeconds > 0) {
+        countdownNumber.textContent = countdownSeconds.toString();
+        
+        // 为最后一秒添加特殊样式
+        if (countdownSeconds === 1) {
+          countdownNumber.classList.add('final');
+        }
+        
+        // 重新触发动画
+        countdownNumber.style.animation = 'none';
+        countdownNumber.offsetHeight; // 触发重排
+        countdownNumber.style.animation = 'countdownPulse 1s ease-in-out';
+        
+        countdownSeconds--;
+        countdownTimer = setTimeout(updateCountdown, 1000);
+      } else {
+        // 显示"开始！"
+        countdownNumber.textContent = '开始！';
+        countdownNumber.classList.add('go');
+        
+        setTimeout(() => {
+          // 隐藏倒计时覆盖层
+          if (countdownOverlay) {
+            countdownOverlay.style.display = 'none';
+          }
+          
+          // 显示顶部计时器并开始练习计时
+          showTimer();
+          startPracticeTimer();
+          
+          if (hintEl) hintEl.textContent = '开始打字！';
+          setTimeout(() => {
+            if (hintEl) hintEl.textContent = '';
+          }, 1000);
+        }, 800);
+      }
+    }
+  }
+  
+  updateCountdown();
+}
+
+function startPracticeTimer() {
+  if (!isSpeedTestMode) return;
+  
+  practiceStartTime = Date.now();
+  
+  function updateTimer() {
+    if (!practiceStartTime || practiceEndTime) return;
+    
+    const elapsed = Math.floor((Date.now() - practiceStartTime) / 1000);
+    const minutes = Math.floor(elapsed / 60);
+    const seconds = elapsed % 60;
+    
+    if (timerValue) {
+      timerValue.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+    
+    practiceTimer = setTimeout(updateTimer, 1000);
+  }
+  
+  updateTimer();
+}
+
+function stopPracticeTimer() {
+  if (countdownTimer) {
+    clearTimeout(countdownTimer);
+    countdownTimer = null;
+  }
+  
+  if (practiceTimer) {
+    clearTimeout(practiceTimer);
+    practiceTimer = null;
+  }
+  
+  if (practiceStartTime && !practiceEndTime) {
+    practiceEndTime = Date.now();
+  }
+  
+  if (timerContainer) {
+    timerContainer.classList.remove('timer-countdown');
+  }
+}
+
+function resetTimer() {
+  stopPracticeTimer();
+  practiceStartTime = null;
+  practiceEndTime = null;
+  countdownSeconds = 3;
+  
+  // 隐藏倒计时覆盖层
+  if (countdownOverlay) {
+    countdownOverlay.style.display = 'none';
+  }
+  
+  if (timerValue) {
+    timerValue.textContent = '00:00';
+  }
+  
+  if (isSpeedTestMode) {
+    hideTimer();
+  }
+}
+
 function render(){
   if (currentMode === 'words' || currentMode === 'words_junior' || currentMode === 'words_high' || currentMode === 'words_toefl') {
     renderWordMode();
@@ -561,8 +928,19 @@ function render(){
   progressEl.textContent = Math.round((index / text.length) * 100) + '%';
   const acc = keystrokes ? Math.max(0, Math.round((1 - wrong/keystrokes) * 100)) : 0;
   accEl.textContent = acc + '%';
-  const mins = startedAt ? (Date.now() - startedAt)/60000 : 0;
-  const wpm = mins > 0 ? Math.round((index/5) / mins) : 0; // 5 chars per word
+  let mins = 0;
+  let wpm = 0;
+  
+  if (isSpeedTestMode && practiceStartTime) {
+    // 测速模式：严格按照计时器时间计算
+    const currentTime = practiceEndTime || Date.now();
+    mins = (currentTime - practiceStartTime) / 60000;
+    wpm = mins > 0 ? Math.round((index/5) / mins) : 0; // 5 chars per word
+  } else if (startedAt) {
+    // 普通模式：使用原来的计算方式
+    mins = (Date.now() - startedAt) / 60000;
+    wpm = mins > 0 ? Math.round((index/5) / mins) : 0; // 5 chars per word
+  }
   wpmEl.textContent = String(wpm);
   kpmEl.textContent = mins > 0 ? String(Math.round(keystrokes / mins)) : '0';
 }
@@ -649,17 +1027,49 @@ function reset(){
   // 清空错误字符跟踪
   errorCharacters.clear();
   correctedCharacters.clear();
+  // 重置计时器
+  resetTimer();
   if (stageEl) stageEl.classList.remove('pop');
-  if (hintEl) hintEl.textContent = '按任意键开始';
+  if (hintEl) {
+    if (isSpeedTestMode) {
+      hintEl.textContent = '准备开始，3秒后开始计时';
+    } else {
+      hintEl.textContent = '按任意键开始';
+    }
+  }
   render();
+  
+  // 如果是测速模式，启动倒计时
+  if (isSpeedTestMode) {
+    setTimeout(() => {
+      startCountdown();
+    }, 1000);
+  }
 }
 
 function finishSession() {
-  if (!startedAt || !sessionStartTime) return;
+  // 停止计时器
+  if (isSpeedTestMode) {
+    stopPracticeTimer();
+  }
   
-  const duration = (Date.now() - sessionStartTime) / 1000; // seconds
-  const mins = duration / 60;
-  const wpm = mins > 0 ? Math.round((index/5) / mins) : 0;
+  if ((!startedAt || !sessionStartTime) && !isSpeedTestMode) return;
+  if (isSpeedTestMode && !practiceStartTime) return;
+  
+  let duration, mins, wpm;
+  
+  if (isSpeedTestMode && practiceStartTime) {
+    // 测速模式：使用严格计时
+    duration = (practiceEndTime - practiceStartTime) / 1000; // seconds
+    mins = duration / 60;
+    wpm = mins > 0 ? Math.round((index/5) / mins) : 0;
+  } else {
+    // 普通模式：使用原来的计算方式
+    duration = (Date.now() - sessionStartTime) / 1000; // seconds
+    mins = duration / 60;
+    wpm = mins > 0 ? Math.round((index/5) / mins) : 0;
+  }
+  
   const accuracy = keystrokes ? Math.max(0, Math.round((1 - wrong/keystrokes) * 100)) : 0;
   
   const sessionData = {
@@ -674,6 +1084,99 @@ function finishSession() {
   };
   
   saveStats(sessionData);
+  
+  // 如果是关卡模式且完成了练习，保存关卡进度
+  if (currentWordType && currentLevel && completedWordsInLevel >= wordsPerLevel) {
+    // 只有在准确率达到80%以上时才算完成关卡
+    const levelCompleted = accuracy >= 80;
+    saveLevelProgress(currentWordType, currentLevel, levelCompleted);
+  }
+}
+
+function showLevelCompletionModal() {
+  // 先清理已存在的模态框
+  const existingModal = document.querySelector('.modal-overlay');
+  if (existingModal) {
+    existingModal.remove();
+  }
+  
+  const duration = (Date.now() - sessionStartTime) / 1000;
+  const mins = duration / 60;
+  const wpm = mins > 0 ? Math.round((completedWordsInLevel * 5) / mins) : 0;
+  const accuracy = keystrokes ? Math.max(0, Math.round((1 - wrong/keystrokes) * 100)) : 0;
+  
+  const levelCompleted = accuracy >= 80;
+  const nextLevel = currentLevel + 1;
+  const hasNextLevel = nextLevel <= getTotalLevels(currentWordType);
+  
+  let modalContent = `
+    <div class="level-completion-modal">
+      <div class="modal-content">
+        <h2>${levelCompleted ? '🎉 关卡完成！' : '⚠️ 关卡未完成'}</h2>
+        <div class="completion-stats">
+          <div class="stat-item">
+            <span class="stat-label">完成单词</span>
+            <span class="stat-value">${completedWordsInLevel}/${wordsPerLevel}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">准确率</span>
+            <span class="stat-value">${accuracy}%</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">速度</span>
+            <span class="stat-value">${wpm} WPM</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">用时</span>
+            <span class="stat-value">${Math.round(duration)}秒</span>
+          </div>
+        </div>
+        ${levelCompleted ? 
+          `<p class="completion-message">恭喜！您已成功完成关卡 ${currentLevel}！</p>` :
+          `<p class="completion-message">需要达到80%准确率才能完成关卡，请再试一次！</p>`
+        }
+        <div class="modal-actions">
+          <button id="retryLevel" class="btn btn-secondary">重试关卡</button>
+          ${levelCompleted && hasNextLevel ? 
+            `<button id="nextLevel" class="btn btn-primary">下一关卡</button>` : ''
+          }
+          <button id="backToLevels" class="btn btn-success">返回关卡</button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // 创建并显示模态框
+  const modalDiv = document.createElement('div');
+  modalDiv.className = 'modal-overlay';
+  modalDiv.innerHTML = modalContent;
+  document.body.appendChild(modalDiv);
+  
+  // 添加事件监听器
+  const retryBtn = modalDiv.querySelector('#retryLevel');
+  const nextBtn = modalDiv.querySelector('#nextLevel');
+  const backBtn = modalDiv.querySelector('#backToLevels');
+  
+  if (retryBtn) {
+    retryBtn.addEventListener('click', () => {
+      modalDiv.remove();
+      startLevelPractice(currentWordType, currentLevel);
+    });
+  }
+  
+  if (nextBtn) {
+    nextBtn.addEventListener('click', () => {
+      modalDiv.remove();
+      startLevelPractice(currentWordType, nextLevel);
+    });
+  }
+  
+  if (backBtn) {
+    backBtn.addEventListener('click', () => {
+      modalDiv.remove();
+      showLevelSelectionPage(currentWordType);
+    });
+  }
 }
 
 // 旧的onKey函数已被新的输入系统替代
@@ -785,6 +1288,11 @@ function handleSpecialKeys(e) {
 }
 
 function processCharacterInput(char) {
+  // 在测速模式下，如果计时器还没开始，忽略输入
+  if (isSpeedTestMode && !practiceStartTime) {
+    return;
+  }
+  
   if (!startedAt) { 
     startedAt = Date.now(); 
     sessionStartTime = Date.now();
@@ -837,19 +1345,41 @@ function processCharacterInput(char) {
     
     // Check if finished
     if (index >= text.length) {
+      // 在测速模式下，立即停止计时
+      if (isSpeedTestMode) {
+        stopPracticeTimer();
+      }
+      
       // 在单词模式下，完成一个单词后自动切换到下一个单词
       if (currentMode === 'words_junior' || currentMode === 'words_high' || currentMode === 'words_toefl') {
-        // 生成新的单词
-        generateContent(currentMode);
-        index = 0;
-        // 清空错误字符跟踪
-        errorCharacters.clear();
-        correctedCharacters.clear();
-        // 显示提示信息
-        if (hintEl) hintEl.textContent = '单词完成！继续下一个单词';
-        setTimeout(() => {
-          if (hintEl) hintEl.textContent = '';
-        }, 1000);
+        completedWordsInLevel++; // 增加已完成单词计数
+        currentWordIndex++; // 移动到下一个单词
+        
+        // 检查是否完成了关卡（20个单词）
+        if (completedWordsInLevel >= wordsPerLevel) {
+          // 关卡完成
+          finishSession();
+          showLevelCompletionModal();
+        } else {
+          // 使用关卡中的下一个单词
+          if (currentWordIndex < currentLevelWords.length) {
+            text = currentLevelWords[currentWordIndex];
+          } else {
+            // 如果超出了关卡单词列表，重新开始（理论上不应该发生）
+            currentWordIndex = 0;
+            text = currentLevelWords[currentWordIndex];
+          }
+          index = 0;
+          // 清空错误字符跟踪
+          errorCharacters.clear();
+          correctedCharacters.clear();
+          // 显示提示信息
+          if (hintEl) hintEl.textContent = `单词完成！进度: ${completedWordsInLevel}/${wordsPerLevel}`;
+          setTimeout(() => {
+            if (hintEl) hintEl.textContent = '';
+          }, 1500);
+          render(); // 重新渲染页面
+        }
       } else {
         finishSession();
         if (currentMode === 'words') {
@@ -922,29 +1452,66 @@ if (backBtn) {
 const categoryBackBtn = document.getElementById('categoryBackBtn');
 const categoryCards = document.querySelectorAll('.category-card');
 
+// Level selection page events
+const levelBackBtn = document.getElementById('levelBackBtn');
+const speedTestBackBtn = document.getElementById('speedTestBackBtn');
+
 if (categoryBackBtn) {
   categoryBackBtn.addEventListener('click', showHomePage);
+}
+
+if (levelBackBtn) {
+  levelBackBtn.addEventListener('click', showWordCategoryPage);
+}
+
+if (speedTestBackBtn) {
+  speedTestBackBtn.addEventListener('click', showHomePage);
+}
+
+// 速度测试卡片点击事件
+const speedTestCards = document.querySelectorAll('.speed-test-card');
+speedTestCards.forEach(card => {
+  card.addEventListener('click', () => {
+    const testType = card.dataset.testType;
+    if (testType === 'level-assessment' && !card.classList.contains('disabled')) {
+      // 启动等级评估测试
+      showTypingPage('test');
+    }
+    // 匹配挑战暂时不处理，因为卡片是禁用状态
+  });
+});
+
+// 关卡卡片点击事件（使用事件委托）
+const levelGrid = document.getElementById('levelGrid');
+if (levelGrid) {
+  levelGrid.addEventListener('click', (e) => {
+    const levelCard = e.target.closest('.level-card');
+    if (levelCard && !levelCard.classList.contains('locked')) {
+      const level = parseInt(levelCard.dataset.level);
+      startLevelPractice(currentWordType, level);
+    }
+  });
 }
 
 categoryCards.forEach(card => {
   card.addEventListener('click', () => {
     const wordType = card.dataset.wordType;
-    // 映射旧的wordType到新的模式名称
-    let mode;
+    // 映射旧的wordType到新的关卡系统类型
+    let levelWordType;
     switch(wordType) {
       case 'basic':
-        mode = 'words_junior';
+        levelWordType = 'junior';
         break;
       case 'highschool':
-        mode = 'words_high';
+        levelWordType = 'high';
         break;
       case 'toefl':
-        mode = 'words_toefl';
+        levelWordType = 'toefl';
         break;
       default:
-        mode = 'words_junior';
+        levelWordType = 'junior';
     }
-    showTypingPage(mode);
+    showLevelSelectionPage(levelWordType);
   });
 });
 
@@ -962,6 +1529,9 @@ practiceCards.forEach(card => {
     } else if (mode === 'words') {
       // Show word category selection page
       showWordCategoryPage();
+    } else if (mode === 'speed-test') {
+      // Show speed test page
+      showSpeedTestPage();
     } else {
       showTypingPage(mode);
     }
